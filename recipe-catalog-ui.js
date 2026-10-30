@@ -58,7 +58,12 @@ function catalogUse(recipeId){
     const day=Number(el("catalog-day-choice").value);
     if(!Number.isInteger(day)||day<0||day>6)return;
     if(!R[item.appId].ings.length&&!confirm("この料理は材料が未登録です。アレルギー確認・買い物量・栄養計算ができません。それでも献立に配置しますか？"))return;
+    const kind=mealKind(s.week[day].main);
+    if(kind==='pasta'&&slot==='side'){alert('パスタは副菜なしです。別の曜日を選んでください。');return;}
     s.week[day][slot]=item.appId;
+    if(slot==='main'){s.week[day].optionalSide=false;s.week[day].optionalSoup=false;}
+    if(slot==='side'&&(kind==='pot'||kind==='curry'))s.week[day].optionalSide=true;
+    if(slot==='soup'&&kind==='pasta')s.week[day].optionalSoup=true;
     delete s.ratings[id(day,slot)];
     save();renderPlanner();el("modalbg").classList.remove("show");
   };
@@ -69,7 +74,7 @@ function catalogUse(recipeId){
 const oldRenderShopping=renderShopping;
 renderShopping=function(){
   oldRenderShopping();
-  const missing=Array.from(new Set(s.week.flatMap(d=>(R[d.main]?.isOneDish?["main"]:slots)
+  const missing=Array.from(new Set(s.week.flatMap(d=>mealRoles(d)
     .map(t=>R[d[t]]).filter(rec=>rec&&!rec.ings.length).map(rec=>rec.n))));
   el("catalog-missing").innerHTML=missing.length
     ?'<div class="warning" style="margin-bottom:16px"><strong>材料未登録（集計対象外）：</strong>'+missing.map(esc).join("、")+"</div>"
