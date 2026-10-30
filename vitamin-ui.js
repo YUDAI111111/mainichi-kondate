@@ -2,6 +2,28 @@
 (function(){
  const keys=window.KONDATE_MICRO_KEYS||[];
  const foods=window.KONDATE_MICRO_FOODS||{};
+ const references=window.KONDATE_TARGETS||{};
+ const referenceTypes={VITA_RAE:"推奨量",VITD:"目安量",TOCPHA:"目安量",VITK:"目安量",
+  THIA:"推奨量",RIBF:"推奨量",VITB6A:"推奨量",VITB12:"目安量",
+  FOL:"推奨量",VITC:"推奨量",CA:"推奨量",FE:"推奨量",
+  ZN:"推奨量",MG:"推奨量",K:"目標量"};
+ function referenceProfile(){
+  const v=el('micro-target-profile')?.value||s.microTargetProfile||'male1829';
+  return ['male1829','female1829','female1829m'].includes(v)?v:'male1829';
+ }
+ function targetFor(key){
+  const profile=referenceProfile(),row=references[key];
+  if(!row)return null;
+  if(key==='FE'&&profile==='female1829m')return 10;
+  return row[profile==='male1829'?0:1];
+ }
+ function deficitList(data){
+  return catalog.filter(([key])=>{
+   const target=targetFor(key);
+   return target!=null&&Number(data.micro?.[key]||0)<target;
+  }).sort((a,b)=>Number(data.micro?.[a[0]]||0)/targetFor(a[0])-Number(data.micro?.[b[0]]||0)/targetFor(b[0]));
+ }
+
  const catalog=[
   ['VITA_RAE','ビタミンA','μgRAE',0],
   ['VITD','ビタミンD','μg',1],
@@ -38,11 +60,18 @@
   return {value:value==='—'?value:value+' '+unit,covered,miss:missing.length,missing};
  }
  function nutrientCard(d,item){
-  const [key,name,unit,digits]=item;
-  const f=formatted(d,key,digits,unit),partial=f.miss>0;
-  return '<div class="micro-card"><div class="micro-title">'+name+'</div>'+
+  const [key,name,unit,digits]=item,got=Number(d.micro?.[key]||0),goal=targetFor(key);
+  const f=formatted(d,key,digits,unit),partial=f.miss>0,below=goal!=null&&got<goal,hasAny=f.covered>0;
+  const percent=goal>0?Math.round(got/goal*100):0;
+  const state=hasAny?(below?(partial?'基準未達の可能性（未算出あり）':'基準未達（参考値）'):
+    '基準量に到達（算出済み分）'):'データ不足で評価不可';
+  const klass=!hasAny?'micro-unknown':below?'micro-below':'micro-met';
+  return '<div class="micro-card '+klass+'"><div class="micro-title">'+name+'</div>'+
    '<strong class="micro-value">'+f.value+(partial?' <small>※</small>':'')+'</strong>'+
-   '<div class="micro-coverage">'+(f.covered?f.covered+'材料の成分値を加算':'成分値が未登録')+
+   '<div class="micro-standard">'+(referenceTypes[key]||'参考基準')+'：'+goal+' '+unit+' / 日</div>'+
+   '<div class="micro-meter"><span style="width:'+Math.min(100,percent)+'%"></span></div>'+
+   '<div class="micro-status">'+state+'・'+percent+'%</div>'+
+   '<div class="micro-coverage">'+(f.covered?f.covered+'材料の成分値を加算':'成分値未登録')+
    (partial?'／未算出 '+f.miss+'件':'')+'</div></div>';
  }
  function detailMealRow(name,v){
@@ -80,22 +109,45 @@
  function renderMicro(){
   const host=el('micro-nutrients'),a=s.analysis;if(!host)return;
   if(!a||!a.daily?.[0]?.micro){
-   host.innerHTML='<p class="micro-empty">まだビタミン・ミネラルを計算していません。週間献立タブの「栄養計算（現在のレシピで集計）」を押してください。</p>';return;
+   host.innerHTML='<p class="micro-empty">未集計です。週間献立タブの「栄養計算」ボタンで計算してください。</p>';return;
   }
-  const sel=el('micro-day');
-  const choice=sel?.value||'avg';
+  const sel=el('micro-day'),choice=sel?.value||'0';
   const d=choice==='avg'?averageData(a.daily):a.daily[Number(choice)];
   if(!d)return;
   const vitamins=catalog.filter(item=>vitaminIds.has(item[0])),minerals=catalog.filter(item=>!vitaminIds.has(item[0]));
-  const shown=choice==='avg'?'週の1日平均（算出済み分）':title(Number(choice))+'の摂取量（算出済み分）';
+  const shown=choice==='avg'?'1週間の1日平均':title(Number(choice))+'の摂取量';
   const gaps=[...new Set(catalog.flatMap(item=>d.microMissing?.[item[0]]||[]))];
-  host.innerHTML='<p class="micro-main-note">'+esc(shown)+'。<strong>食品成分表に値がある食材のみ合計しています。</strong></p>'+
-   '<h3>ビタミン</h3><div class="micro-grid">'+vitamins.map(item=>nutrientCard(d,item)).join('')+'</div>'+
+  const deficits=deficitList(d);
+  const pending=deficits.filter(([key])=>(d.microMissing?.[key]||[]).length>0).length;
+  const selected=referenceProfile();
+  const overviews=a.daily.map((day,i)=>{
+   const lacking=deficitList(day),titles=lacking.slice(0,3).map(x=>x[1]);
+   return '<button type="button" class="'+(choice===String(i)?'active':'')+'" data-micro-view-day="'+i+'"><b>'+title(i)+'</b>'+
+    '<span>'+(!lacking.length?'基準未達の候補なし':titles.join('・')+(lacking.length>3?' 他'+(lacking.length-3)+'項目':''))+'</span></button>';
+  }).join('');
+  const emphasis=deficits.map(([key,name,unit,digits])=>{
+   const goal=targetFor(key),value=Number(d.micro?.[key]||0),percent=Math.round(100*value/goal);
+   const incomplete=(d.microMissing?.[key]||[]).length>0;
+   return '<span>'+name+'　'+percent+'%'+(incomplete?'（未算出あり）':'')+'</span>';
+  }).join('');
+  host.innerHTML=
+   '<h3>曜日別・基準未達の候補</h3><div class="nutrition-day-overview">'+overviews+'</div>'+
+   '<p class="micro-main-note">'+esc(shown)+'。基準：18〜29歳の'+
+    (selected==='male1829'?'男性':selected==='female1829m'?'女性（月経あり）':'女性（月経なし）')+
+    ' ／ 厚生労働省「日本人の食事摂取基準（2025年版）」。</p>'+
+   '<div class="micro-deficit-summary"><h3>'+
+    (deficits.length?'基準を下回る可能性がある栄養素：'+deficits.length+'項目':'基準未達の候補はありません')+'</h3>'+
+    '<div class="micro-deficit-items">'+(emphasis||'<span>算出済み部分では基準に到達</span>')+'</div>'+
+    '<p>基準より低い栄養素を優先表示しています。うち'+pending+'項目は未算出の食材・食事があり、<strong>実際の不足を確定できません</strong>。一日だけの結果で栄養欠乏を診断するものでもありません。</p></div>'+
+   '<h3>ビタミン（摂取量と基準を比較）</h3><div class="micro-grid">'+vitamins.map(item=>nutrientCard(d,item)).join('')+'</div>'+
    '<h3>ミネラル</h3><div class="micro-grid">'+minerals.map(item=>nutrientCard(d,item)).join('')+'</div>'+
-   '<div class="micro-warning">※は一部食材・食事が未算出である印です。数値は<strong>計算できた部分の小計</strong>であり、必要量を満たしているという意味ではありません。食品の生・加熱、重量変化や調理による損失は反映していません。</div>'+
+   '<div class="micro-warning">成分値は公表食品の参考値です。未登録食事、未記載の成分、加熱後の変化は推計できません。達成率は参考比較用で、個人の栄養状態を断定しません。</div>'+
    '<h3>食事別の計上内訳</h3>'+dailyMealHtml(a,choice)+
    (gaps.length?'<details class="micro-gaps"><summary>未算出の食材・食事（'+gaps.length+'件）</summary><p>'+gaps.map(esc).join('、')+'</p></details>':'')+
    sourceHtml();
+  document.querySelectorAll('[data-micro-view-day]').forEach(b=>b.onclick=()=>{
+   if(sel){sel.value=b.dataset.microViewDay;renderMicro();}
+  });
  }
  const previousNutrition=renderNutrition;
  renderNutrition=function(){
@@ -110,6 +162,17 @@
   return !s.analysis?.daily?.[0]?.micro||
    (el('analysis-status')?.className||'').includes('analysis-stale');
  }
- if(el('micro-day'))el('micro-day').onchange=renderMicro;
+ if(el('micro-day')){
+  el('micro-day').value=s.microSelectedDay||'0';
+  el('micro-day').onchange=()=>{
+   s.microSelectedDay=el('micro-day').value;save();renderMicro();
+  };
+ }
+ if(el('micro-target-profile')){
+  el('micro-target-profile').value=s.microTargetProfile||'male1829';
+  el('micro-target-profile').onchange=()=>{
+   s.microTargetProfile=referenceProfile();save();renderMicro();
+  };
+ }
  renderNutrition();
 })();
