@@ -28,17 +28,23 @@ function renderCatalog(){
 }
 function catalogDetail(recipeId){
   const item=KONDATE_CATALOG.find(x=>x.id===recipeId);if(!item)return;
-  const rec=R[item.appId],have=rec&&rec.ings&&rec.ings.length>0;
+  const rec=R[item.appId],have=rec&&Array.isArray(rec.ings)&&rec.ings.length>0;
+  const count=Number(s.people)||1;
+  const actual=have?rec.ings.map(x=>[x[0],Number(x[1])*count,x[2]]):[];
   const ingredients=have
-    ?'<div class="ingredientlist">'+rec.ings.map(x=>'<span class="ingredient">'+esc(x[0])+" "+fmt(x[1]*s.people)+esc(x[2])+"</span>").join("")+"</div>"
-    :'<p class="warning">材料・分量は未登録です。料理名から推測して補完していません。</p>';
+    ?'<h4>材料（'+count+'人分）</h4><div class="ingredientlist">'+actual.map(x=>'<span class="ingredient">'+esc(x[0])+" "+fmt(x[1])+esc(x[2])+"</span>").join("")+"</div>"
+    :'<p class="warning">材料・分量は未登録です。</p>';
   const origin=item.original
-    ?"<p>参考："+esc(item.source)+"</p><p>掲載料理："+esc(item.original)+"</p><p class=\"small muted\">調整："+esc(item.adjustment||"未登録")+"</p>"
-    :'<p class="small muted">家庭料理の登録例</p>';
+    ?'<p class="small"><strong>参考：</strong>'+esc(item.source)+'／掲載料理：'+esc(item.original)+'</p><p class="small"><strong>アプリで調整：</strong>'+esc(item.adjustment||"未登録")+'</p>'
+    :'<p class="small muted">家庭料理の登録例（アプリ内で作成した材料・調理手順）</p>';
   const sourceLink=item.url
-    ?'<p><a target="_blank" rel="noopener noreferrer" href="'+esc(item.url)+'">参考元レシピを別タブで開く ↗</a></p>'
+    ?'<p><a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">参考元レシピを別タブで開く ↗</a></p>'
     :(item.original?'<p class="small muted">参考元の直接URLは未確認です。</p>':"");
-  modal(item.name,origin+ingredients+sourceLink+'<p class="small muted">調理手順：未登録。原典未確認の手順を作り物で補いません。</p>');
+  const steps=Array.isArray(rec?.steps)&&rec.steps.length
+    ?'<h4>作り方（アプリ用の調理手順）</h4><ol style="padding-left:24px">'+rec.steps.map(step=>'<li style="margin:8px 0;line-height:1.7">'+esc(step)+'</li>').join("")+'</ol>'
+    :'<p class="warning">作り方が未登録です。</p>';
+  const disclaimer='<p class="small muted">※材料はアプリ用に設定した1人分を人数で換算した参考量です。調理手順も独自調整したもので、参考元に掲載されたレシピと同一ではありません。買い物・栄養計算前に内容をご確認ください。</p>';
+  modal(item.name,origin+sourceLink+ingredients+steps+disclaimer);
 }
 function catalogUse(recipeId){
   const item=KONDATE_CATALOG.find(x=>x.id===recipeId);if(!item)return;
