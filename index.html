@@ -251,6 +251,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,te
 .day-micro-gap.gap-pending .gap-muted{color:#647568}
 @media(max-width:600px){.day-micro-gap{padding:10px 12px}}
 
+
+.curry-note{background:#fff6e6;border:1px solid #e7d7b3;border-radius:8px;color:#67491f;font-size:12px;font-weight:650;line-height:1.6;padding:7px 10px;margin:7px 0 11px}
+
 </style>
 </head>
 <body>
@@ -416,7 +419,7 @@ function lunchMarkup(i){
 }
 function recipeLinkFromPlan(recipeKey,day,slot){
  const item=KONDATE_CATALOG.find(x=>x.appId===recipeKey);
- if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a>'}
+ if(item){const portions=(s.week[day]?.main===recipeKey&&mealKind(recipeKey)==='curry'&&!isCurryCarryover(day))?curryBatchServings(day):Number(s.people);return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+portions+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a>'}
  return '<button class="btn tiny" style="margin-top:7px;width:100%" data-detail="'+day+'-'+slot+'">材料・作り方を見る</button>';
 }
 
@@ -449,6 +452,13 @@ function chooseMealRecipe(kind,current){
  return items[Math.floor(Math.random()*items.length)].appId;
 }
 function mealLabel(kind){return ({normal:'通常',pasta:'パスタ',pot:'鍋',curry:'カレー'})[kind]||kind}
+function isCurryCarryover(day){
+ return day>0&&mealKind(s.week[day]?.main)==='curry'&&s.week[day].main===s.week[day-1]?.main;
+}
+function isCurryNextNight(day){
+ return day<6&&mealKind(s.week[day]?.main)==='curry'&&s.week[day].main===s.week[day+1]?.main;
+}
+function curryBatchServings(day){return Math.max(4,2*Number(s.people||1));}
 function renderPlanner(){
  const pasta=s.week.filter(d=>mealKind(d.main)==='pasta').length;
  const ratingCount=s.week.reduce((sum,d,i)=>sum+mealRoles(d).filter(t=>s.ratings[id(i,t)]===1).length,0);
@@ -468,6 +478,7 @@ function renderPlanner(){
     (author?'<div class="small muted">参考：'+esc(author)+'</div>':'')+
     rating(i,t)+recipeLinkFromPlan(key,i,t)+'</div>';
   }).join('');
+  const curryNote=kind==='curry'?(isCurryCarryover(i)?'<div class="curry-note">前夜のカレーを取り分けて再加熱（新たに調理しない）</div>':'<div class="curry-note">'+curryBatchServings(i)+'食分まとめて調理'+(isCurryNextNight(i)?'・翌日も同じカレー':'')+(curryBatchServings(i)>s.people*(isCurryNextNight(i)?2:1)?'・残りは小分け冷凍':'')+'</div>'):'';
   let optional='';
   if(kind==='pasta')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="soup">'+(d.optionalSoup?'汁物を外す':'汁物を追加（任意）')+'</button>';
   if(kind==='pot'||kind==='curry')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="side">'+(d.optionalSide?'副菜を外す':'副菜を追加（任意）')+'</button>';
@@ -475,10 +486,10 @@ function renderPlanner(){
    '<div class="mealblock breakfast-block"><div class="meallabel">朝食</div>'+breakfastMarkup(i)+'</div>'+
    '<div class="mealblock lunch-block '+(!bentoNeeded(i)?'no-bento':'')+'"><div class="meallabel">弁当</div>'+lunchMarkup(i)+'</div>'+
    '<div class="mealblock dinner-block"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
-   '<div class="toolbar day-kind-picker">'+selectors+'</div><div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div><div class="day-micro-gap" data-micro-gap-day="'+i+'"></div></div>';
+   '<div class="toolbar day-kind-picker">'+selectors+'</div>'+curryNote+'<div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div><div class="day-micro-gap" data-micro-gap-day="'+i+'"></div></div>';
  }).join('');
  el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
-  '<p class="small muted">弁当不要：'+(s.noBentoDays?.length?s.noBentoDays.map(i=>daynames[i]+'曜').join('・'):'なし')+' ／ 通常夕食は翌日の弁当が必要な場合のみ主菜・副菜を各2食分。</p>'+' <p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
+  '<p class="small muted">カレーは4食分以上まとめて調理し、翌晩も同じカレー。残りは冷凍し、栄養上は食べた分だけ計上。</p>'+ '<p class="small muted">弁当不要：'+(s.noBentoDays?.length?s.noBentoDays.map(i=>daynames[i]+'曜').join('・'):'なし')+' ／ 通常夕食は翌日の弁当が必要な場合のみ主菜・副菜を各2食分。</p>'+' <p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
  document.querySelectorAll('[data-rating]').forEach(btn=>btn.onclick=()=>{
   const day=+btn.dataset.day,slot=btn.dataset.slot,v=+btn.dataset.rating;
   if(v===1){s.ratings[id(day,slot)]=1;s.likes.push(s.week[day][slot]);}
@@ -493,9 +504,16 @@ function renderPlanner(){
  document.querySelectorAll('[data-kind-day]').forEach(btn=>btn.onclick=()=>{
   const day=+btn.dataset.kindDay,kind=btn.dataset.kind,current=s.week[day],old=mealKind(current.main);
   if(old===kind)return;
+  if(kind==='curry'&&day===6){alert('カレーは翌日夜まで続けるため、日曜以外を開始日にしてください。');return;}
+  if(kind==='curry'&&!confirm(daynames[day]+'曜と'+daynames[day+1]+'曜の夕食を、同じカレーに変更しますか？'))return;
   if(kind==='pasta'&&s.week.filter((d,i)=>i!==day&&mealKind(d.main)==='pasta').length>=Number(s.pastaCount)){alert('パスタは週'+s.pastaCount+'回の設定です。先に別のパスタの日を変更してください。');return;}
   try{current.main=chooseMealRecipe(kind,current.main)}catch(ex){alert(ex.message);return}
   current.optionalSide=false;current.optionalSoup=false;
+  if(kind==='curry'){
+   s.week[day+1].main=current.main;
+   s.week[day+1].optionalSide=false;s.week[day+1].optionalSoup=false;
+   delete s.ratings[id(day+1,'main')];
+  }
   delete s.ratings[id(day,'main')];
   save();renderPlanner();
  });
@@ -532,6 +550,15 @@ function rejectAndReplace(i,t){
  }
  const next=pool[0].appId;
  s.rejected.push(old);d[t]=next;
+ if(t==='main'&&kind==='curry'){
+  // 同じ鍋を2日食べる設定：片方を差し替えたときは両日同じ種類へ
+  for(const neighbor of [i-1,i+1]){
+   if(neighbor>=0&&neighbor<7&&s.week[neighbor].main===old){
+    s.week[neighbor].main=next;
+    delete s.ratings[id(neighbor,'main')];
+   }
+  }
+ }
  s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});
  delete s.ratings[id(i,t)];
 }
@@ -551,7 +578,11 @@ function shoppingData(){
  for(let i=0;i<7;i++){
   const d=s.week[i],kind=mealKind(d.main),parts=mealRoles(d);
   const extra=(kind==='normal'&&bentoNeeded((i+1)%7))?1:0;
-  add(R[d.main],s.people*(1+extra),true);
+  // カレーは初日に4食分以上まとめて調理し、同じカレーの翌日は買い足さない。
+  // 食べる量（栄養・日別食費）は別途、各日の1食分だけ計上。
+  if(kind==='curry'){
+   if(!isCurryCarryover(i))add(R[d.main],curryBatchServings(i),true);
+  }else add(R[d.main],s.people*(1+extra),true);
   if(parts.includes('side'))add(R[d.side],s.people*(1+extra));
   if(parts.includes('soup'))add(R[d.soup],s.people*(s.morningSoup?2:1));
   if(kind==='normal'||kind==='curry')add({ings:[['米',160/cookedToDry,'g']]},s.people*(1+extra));
@@ -709,12 +740,16 @@ function newWeekForReset(){
  }
  const pastaCount=Math.min(2,Math.max(1,Number(s.pastaCount)||1));
  const pastaDays=new Set(pastaCount===2?[2,5]:[2]);
- const potDay=6,curryDay=4;
+ const potDay=6,curryDay=3;
  const next=[];
  for(let i=0;i<7;i++){
   const old=previous[i]||{};
   if(pastaDays.has(i)){
    next.push({main:'pasta',side:old.side||'komatsu',soup:old.soup||'wakamesoup',optionalSoup:false,optionalSide:false});
+   continue;
+  }
+  if(i===curryDay+1){
+   next.push({main:next[curryDay].main,side:old.side||'komatsu',soup:old.soup||'wakamesoup',optionalSide:false,optionalSoup:false});
    continue;
   }
   if(i===potDay||i===curryDay){
