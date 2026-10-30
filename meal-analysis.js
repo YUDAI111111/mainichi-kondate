@@ -249,46 +249,26 @@
  }
  function aPeople(){return s.analysis?.people||Number(s.people)||1;}
  function dailyTables(a){
-  const rows=a.daily.map((d,i)=>{
-   const cost=liveCostDay(i);
-   return '<tr><th scope="row">'+daynames[i]+'曜</th>'+
-    '<td>'+money(cost.price)+(cost.missing.length?' ※':'')+'</td>'+
-    '<td>'+nf(d.kcal)+' kcal '+(d.missingNutrition.length?'※':'')+'</td>'+
+  const rows=a.daily.map((d,i)=>
+   '<tr><th scope="row">'+daynames[i]+'曜</th>'+
+    '<td>'+nf(d.kcal)+' kcal'+(d.missingNutrition.length?' ※':'')+'</td>'+
     '<td>'+nf(d.protein,1)+' g</td><td>'+nf(d.fat,1)+' g</td>'+
-    '<td>'+nf(d.carb,1)+' g</td><td>'+nf(d.fiber,1)+' g</td><td>'+nf(d.salt,1)+' g</td></tr>';
-  }).join('');
-  return '<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>曜日</th><th>食費</th><th>熱量</th><th>たんぱく質</th><th>脂質</th><th>炭水化物</th><th>食物繊維</th><th>食塩相当量</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-   '<p class="subtle">※ 未算出食材がある日の数値は、確認できた材料のみの小計です。完全な1日摂取量ではありません。食費は設定した仮単価による概算です。</p>';
+    '<td>'+nf(d.carb,1)+' g</td><td>'+nf(d.fiber,1)+' g</td><td>'+nf(d.salt,1)+' g</td></tr>'
+  ).join('');
+  return '<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>曜日</th><th>熱量</th><th>たんぱく質</th><th>脂質</th><th>炭水化物</th><th>食物繊維</th><th>食塩相当量</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+   '<p class="subtle">※ 未算出食材がある日の数値は小計です。詳しいビタミン・ミネラルの不足候補は、このタブの上部に表示しています。</p>';
  }
  function summaryHTML(){
   const a=s.analysis;
-  if(!a)return '<p class="analysis-empty">未集計です。献立が決まったら上のボタンで計算してください。</p>';
-  const live=liveCostSummary(),spent=live.purchase.cost,hasMissing=live.miss;
-  const budget=live.budget==null?'未設定':money(live.budget);
-  const over=live.budget!=null&&spent>live.budget;
-  const diff=live.diff;
-  const total=live.spent;
-  const gaps=a.daily.flatMap((d,i)=>{
-   const parts=[...new Set([...d.missingNutrition,...d.missingPrice])];
-   return parts.length?['<strong>'+daynames[i]+'曜：</strong>'+parts.map(esc).join('、')]:[];
-  });
-  return '<div class="analysis-kpis">'+
-   '<div><small>週の食費予算</small><strong>'+budget+'</strong></div>'+
-   '<div><small>1週間の購入見込み（算出済み分）</small><strong>'+money(spent)+(live.purchase.miss.length?' ※':'')+'</strong></div>'+
-   '<div><small>週予算との差額'+(hasMissing?'（未計上あり）':'')+'</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
-   '<div><small>今週の食事分（参考）</small><strong>'+money(total)+'</strong></div></div>'+
-   '<p class="analysis-foot">購入見込みは在庫差引後の買い物リストから算出。各日の食費は食べる料理の材料費です。計上範囲が異なり、一致するとは限りません。'+
-    (live.purchase.miss.length?'未計上の材料・食事・単価：'+live.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
-   '<h3>曜日別の食費・栄養素</h3>'+dailyTables(a)+
-   (gaps.length?'<details class="analysis-gaps"><summary>計算に含められなかった食材・食事（'+gaps.length+'日）</summary><p>'+gaps.join('</p><p>')+'</p></details>':'');
+  if(!a)return '<p class="analysis-empty">まだ栄養計算を行っていません。週間献立のボタンで計算してください。</p>';
+  const gaps=a.daily.flatMap((d,i)=>d.missingNutrition.length?
+   ['<strong>'+daynames[i]+'曜：</strong>'+d.missingNutrition.map(esc).join('、')]:[]);
+  return '<h3>曜日別の基礎栄養素（手動集計）</h3>'+dailyTables(a)+
+   (gaps.length?'<details class="analysis-gaps"><summary>未算出の食材・食事（'+gaps.length+'日）</summary><p>'+gaps.join('</p><p>')+'</p></details>':'');
  }
  function renderPanel(){
-  const summary=el('analysis-summary');
-  if(summary)summary.innerHTML=summaryHTML();
   const header=el('live-cost-summary');
   if(header)header.innerHTML=liveCostMarkup();
-  const shoppingCost=el('shopping-live-cost');
-  if(shoppingCost)shoppingCost.innerHTML=liveCostMarkup();
   const status=el('analysis-status');
   if(status){status.textContent=statusText();status.className='analysis-status '+(!isFresh()?'analysis-stale':'analysis-fresh');}
   document.querySelectorAll('[data-cost-day]').forEach(node=>{
@@ -333,7 +313,7 @@
  el('run-nutrition').onclick=()=>{
   s.analysis=snapshot();
   save();renderPanel();renderNutrition();
-  const section=el('analysis-summary');if(section?.scrollIntoView)section.scrollIntoView({behavior:'smooth',block:'start'});
+  
  };
  el('save-price-master').onclick=()=>{
   const inputs=[...document.querySelectorAll('[data-price-value]')],next={};
