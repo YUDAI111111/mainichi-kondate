@@ -168,10 +168,12 @@
  function summaryHTML(){
   const a=s.analysis;
   if(!a)return '<p class="analysis-empty">未集計です。献立が決まったら上のボタンで計算してください。</p>';
-  const spent=a.purchase.cost,canCompare=a.budget!=null&&!a.purchase.miss.length;
+  const spent=a.purchase.cost,hasMissing=a.purchase.miss.length>0;
   const budget=a.budget==null?'未設定':money(a.budget);
-  const diff=canCompare?money(a.budget-spent):'未確定';
-  const over=canCompare&&spent>a.budget;
+  const over=a.budget!=null&&spent>a.budget;
+  const diff=a.budget==null?'未設定':
+   hasMissing?(over?'少なくとも '+money(spent-a.budget)+'超過':'残り最大 '+money(a.budget-spent)):
+   money(a.budget-spent);
   const total=a.daily.reduce((sum,d)=>sum+d.price*a.people,0);
   const gaps=a.daily.flatMap((d,i)=>{
    const parts=[...new Set([...d.missingNutrition,...d.missingPrice])];
@@ -180,7 +182,7 @@
   return '<div class="analysis-kpis">'+
    '<div><small>週の食費予算</small><strong>'+budget+'</strong></div>'+
    '<div><small>1週間の購入見込み（算出済み分）</small><strong>'+money(spent)+(a.purchase.miss.length?' ※':'')+'</strong></div>'+
-   '<div><small>予算との差額</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
+   '<div><small>週予算との差額'+(hasMissing?'（未計上あり）':'')+'</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
    '<div><small>今週の食事分（参考）</small><strong>'+money(total)+'</strong></div></div>'+
    '<p class="analysis-foot">購入見込みは在庫差引後の買い物リストから算出。各日の食費は食べる料理の材料費です。計上範囲が異なり、一致するとは限りません。'+
     (a.purchase.miss.length?'未計上の材料・食事・単価：'+a.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
