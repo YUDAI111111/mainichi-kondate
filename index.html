@@ -135,7 +135,7 @@ function breakfastLabel(){
 function mealLunch(i){const p=s.week[i-1];if(!p)return '弁当（週初めの献立要登録）';const kind=mealKind(p.main);if(kind!=='normal')return '弁当（前夜が'+mealLabel(kind)+'のため別途準備）';return R[p.main]?.n+'（前夜に取り分け）'}
 function recipeLinkFromPlan(recipeKey,day,slot){
  const item=KONDATE_CATALOG.find(x=>x.appId===recipeKey);
- if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く ↗</a>'}
+ if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a>'}
  return '<button class="btn tiny" style="margin-top:7px;width:100%" data-detail="'+day+'-'+slot+'">材料・作り方を見る</button>';
 }
 
