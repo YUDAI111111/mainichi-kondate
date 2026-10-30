@@ -154,17 +154,18 @@
   const fresh=!!s.analysis?.daily?.[0]?.micro&&!aIsStale();
   document.querySelectorAll('[data-micro-gap-day]').forEach(node=>{
    const index=Number(node.dataset.microGapDay);
-   node.classList.toggle('gap-pending',!fresh);
    if(!fresh){
-    node.innerHTML='<span class="gap-label">栄養チェック</span>'+
-     '<span class="gap-muted">'+(s.analysis?'献立や設定が変更されています。栄養計算ボタンで更新してください。':'未計算です。上の「栄養計算」ボタンで確認できます。')+'</span>';
+    node.hidden=true;
+    node.innerHTML='';
     return;
    }
    const day=s.analysis.daily[index],shortfalls=deficitList(day);
    if(!shortfalls.length){
-    node.innerHTML='<span class="gap-label">不足候補</span><span class="gap-muted">算出済みの範囲では基準未達の候補なし</span>';
+    node.hidden=true;
+    node.innerHTML='';
     return;
    }
+   node.hidden=false;
    const incomplete=shortfalls.some(([key])=>(day.microMissing?.[key]||[]).length>0);
    const chips=shortfalls.map(([key,name])=>'<span class="gap-tag">'+esc(name)+'</span>').join('');
    node.innerHTML='<span class="gap-label">不足候補</span><div class="gap-items">'+chips+'</div>'+
