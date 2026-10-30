@@ -1,4 +1,4 @@
-// 既存80品＋カレー12品・鍋12品。家庭料理はオリジナルのアプリ登録例であり料理研究家の出典はありません。
+// 既存104品＋オレンジページ公開レシピを参考に1人分へ調整した18品。著作者名・元記事URLを登録。
 window.KONDATE_CATALOG = [
   {
     "id": "recipe_001",
@@ -1143,5 +1143,203 @@ window.KONDATE_CATALOG = [
     "original": null,
     "adjustment": null,
     "url": null
+  },
+  {
+    "id": "recipe_105",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "煮もの",
+    "name": "大根と鶏肉の煮もの",
+    "source": "千葉 道子／オレンジページ",
+    "original": "大根と鶏肉の煮もの",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/117765"
+  },
+  {
+    "id": "recipe_106",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "炒めもの",
+    "name": "小松菜と豚バラのしょうゆ炒め",
+    "source": "近藤 幸子／オレンジページ",
+    "original": "小松菜と豚バラのしょうゆ炒め",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/302857"
+  },
+  {
+    "id": "recipe_107",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "うま煮",
+    "name": "豚だんごと小松菜のうま煮",
+    "source": "野本 やすゆき／オレンジページ",
+    "original": "豚だんごと小松菜のうま煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/304459"
+  },
+  {
+    "id": "recipe_108",
+    "category": "main",
+    "cuisine": "中華",
+    "style": "ピリ辛炒め",
+    "name": "小松菜とひき肉のピリ辛炒め",
+    "source": "樋口 秀子／オレンジページ",
+    "original": "小松菜とひき肉のピリ辛炒め",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/300508"
+  },
+  {
+    "id": "recipe_109",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "みそ煮",
+    "name": "さばのさっぱりみそ煮",
+    "source": "藤野 嘉子／オレンジページ",
+    "original": "さばのさっぱりみそ煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/300788"
+  },
+  {
+    "id": "recipe_110",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "蒸し煮",
+    "name": "豚肉と菜の花の蒸し煮",
+    "source": "大庭 英子／オレンジページ",
+    "original": "豚肉と菜の花の蒸し煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/120400"
+  },
+  {
+    "id": "recipe_111",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "だし煮",
+    "name": "油揚げと野菜のだし煮",
+    "source": "荒木 典子／オレンジページ",
+    "original": "油揚げと野菜のだし煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/304349"
+  },
+  {
+    "id": "recipe_112",
+    "category": "main",
+    "cuisine": "和風",
+    "style": "うま煮",
+    "name": "豚肉と野菜のうま煮",
+    "source": "大庭 英子／オレンジページ",
+    "original": "豚肉と野菜のうま煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/120738"
+  },
+  {
+    "id": "recipe_113",
+    "category": "pot",
+    "cuisine": "和風",
+    "style": "もつ鍋風",
+    "name": "豚こまキャベツのもつ鍋風",
+    "source": "Mizuki／オレンジページ",
+    "original": "豚こまキャベツのもつ鍋風",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/304297"
+  },
+  {
+    "id": "recipe_114",
+    "category": "side",
+    "cuisine": "和風",
+    "style": "バター炒め",
+    "name": "小松菜とちくわの炒めもの",
+    "source": "小林 まさみ／オレンジページ",
+    "original": "小松菜とちくわの炒めもの",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/news-daily/321808"
+  },
+  {
+    "id": "recipe_115",
+    "category": "side",
+    "cuisine": "和風",
+    "style": "甘煮",
+    "name": "さつまいもの甘煮",
+    "source": "松田 万里子／オレンジページ",
+    "original": "さつまいもの甘煮",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/114056"
+  },
+  {
+    "id": "recipe_116",
+    "category": "side",
+    "cuisine": "和風",
+    "style": "煮びたし",
+    "name": "小松菜の煮びたし",
+    "source": "大庭 英子／オレンジページ",
+    "original": "小松菜の煮びたし",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/123235"
+  },
+  {
+    "id": "recipe_117",
+    "category": "side",
+    "cuisine": "和風",
+    "style": "ごまあえ",
+    "name": "にんじんのごまあえ",
+    "source": "堤 人美／オレンジページ",
+    "original": "にんじんのごまあえ",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/304124"
+  },
+  {
+    "id": "recipe_118",
+    "category": "side",
+    "cuisine": "中華",
+    "style": "卵炒め",
+    "name": "せん切りにんじんの卵炒め",
+    "source": "市瀬 悦子／オレンジページ",
+    "original": "せん切りにんじんの卵炒め",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/news-daily/273282"
+  },
+  {
+    "id": "recipe_119",
+    "category": "soup",
+    "cuisine": "和風",
+    "style": "みそ汁",
+    "name": "小松菜と油揚げのみそ汁",
+    "source": "石原 洋子／オレンジページ",
+    "original": "小松菜と油揚げのみそ汁",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/303272"
+  },
+  {
+    "id": "recipe_120",
+    "category": "soup",
+    "cuisine": "中華",
+    "style": "卵スープ",
+    "name": "かぶの中華スープ",
+    "source": "吉田 愛／オレンジページ",
+    "original": "かぶの中華スープ",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/304394"
+  },
+  {
+    "id": "recipe_121",
+    "category": "soup",
+    "cuisine": "和風",
+    "style": "野菜汁",
+    "name": "野菜たっぷり汁",
+    "source": "夏梅 美智子／オレンジページ",
+    "original": "野菜たっぷり汁",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/122830"
+  },
+  {
+    "id": "recipe_122",
+    "category": "soup",
+    "cuisine": "中華",
+    "style": "コーンスープ",
+    "name": "中華風コーンスープ",
+    "source": "樋口 秀子／オレンジページ",
+    "original": "中華風コーンスープ",
+    "adjustment": "公開材料を参考に1人分の重量・調味料を目安換算し、工程をアプリ用に要約。元記事と同一のレシピではありません。正確な材料と手順は参考元リンクをご確認ください。",
+    "url": "https://www.orangepage.net/recipes/121167"
   }
 ];
