@@ -408,24 +408,28 @@ function rejectAndReplace(i,t){
 }
 function shoppingData(){
  const agg={};
- const add=(rec,mul=1)=>{
+ const add=(rec,mul=1,skipMainRice=false)=>{
   if(!rec?.ings)return;
   for(const [name,q,u] of rec.ings){
+   // 一部の旧主菜レシピに「米」が同梱されている。主食は別に計上するため重複させない。
+   if(skipMainRice&&name==='米')continue;
    const key=name+'|'+u;
    if(!agg[key])agg[key]={name,u,q:0};
    agg[key].q+=q*mul;
   }
  };
+ const cookedToDry=2.2; // 炊飯後160gにつき生米約73gの概算
  for(let i=0;i<7;i++){
   const d=s.week[i],kind=mealKind(d.main),parts=mealRoles(d);
-  // 弁当が必要な翌日だけ、通常献立の主菜・副菜を追加で1食分用意。
-  // 日曜の夕食は翌週月曜の弁当へ取り分け可能。
   const extra=(kind==='normal'&&bentoNeeded((i+1)%7))?1:0;
-  add(R[d.main],s.people*(1+extra));
+  add(R[d.main],s.people*(1+extra),true);
   if(parts.includes('side'))add(R[d.side],s.people*(1+extra));
   if(parts.includes('soup'))add(R[d.soup],s.people*(s.morningSoup?2:1));
-  if(kind==='normal'||kind==='curry')add({ings:[['ご飯（炊飯後）',160,'g']]},s.people*(1+extra));
-  add({ings:breakfastEntries()},s.people);
+  if(kind==='normal'||kind==='curry')add({ings:[['米',160/cookedToDry,'g']]},s.people*(1+extra));
+  const breakfast=breakfastEntries().map(([name,q,unit])=>
+   name==='ご飯（炊飯後）'?['米',q/cookedToDry,'g']:[name,q,unit]
+  );
+  add({ings:breakfast},s.people);
  }
  return Object.values(agg).map(x=>{
   const stock=s.stock.filter(y=>y.name===x.name&&y.u===x.u).reduce((a,b)=>a+b.q,0);
