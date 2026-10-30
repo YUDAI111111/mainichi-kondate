@@ -1,0 +1,234 @@
+/* 献立からの手動集計。公的食品成分表の個別食品照合前の暫定参考値。 */
+(function(){
+ const meta=[
+  ['kcal','エネルギー','kcal',0],
+  ['protein','たんぱく質','g',1],
+  ['fat','脂質','g',1],
+  ['carb','炭水化物','g',1],
+  ['fiber','食物繊維','g',1],
+  ['salt','食塩相当量','g',1]
+ ];
+ const money=n=>Math.round(n).toLocaleString('ja-JP')+'円';
+ const nf=(n,d=0)=>Number(n.toFixed(d)).toLocaleString('ja-JP',{maximumFractionDigits:d});
+ const allow=n=>Number.isFinite(n)&&n>=0;
+ const prices=window.KONDATE_ESTIMATES||{};
+ const weights=window.KONDATE_UNIT_WEIGHTS||{};
+ const itemPrices=window.KONDATE_ITEM_PRICE_PRESETS||{};
+ function foodWeight(name,q,unit){
+  if(unit==='g'||unit==='ml')return q;
+  const key=name+'|'+unit;
+  return weights[key]!=null?q*weights[key]:null;
+ }
+ function priced(name,q,unit){
+  const key=name+'|'+unit;
+  const hasOverride=Object.prototype.hasOwnProperty.call(s.priceOverrides||{},key);
+  const by100=prices[name]?.[6];
+  const unitDefault=itemPrices[key];
+  const unitPrice=hasOverride?Number(s.priceOverrides[key]):unitDefault!=null?unitDefault:by100!=null&&['g','ml'].includes(unit)?by100:null;
+  const base=(unit==='g'||unit==='ml')?100:1;
+  return unitPrice==null||!allow(unitPrice)?null:(q/base)*unitPrice;
+ }
+ function unitPrice(name,unit){
+  const key=name+'|'+unit;
+  if(Object.prototype.hasOwnProperty.call(s.priceOverrides||{},key))return s.priceOverrides[key];
+  return itemPrices[key]??(unit==='g'||unit==='ml'?prices[name]?.[6]:null);
+ }
+ function newTotals(){return {kcal:0,protein:0,fat:0,carb:0,fiber:0,salt:0,price:0,missingNutrition:new Set(),missingPrice:new Set(),count:0};}
+ function countOne(t,name,q,unit){
+  const d=prices[name],w=foodWeight(name,q,unit),p=priced(name,q,unit);
+  if(!d||w==null){
+   t.missingNutrition.add(name+'（'+unit+'）');
+  }else{
+   const factor=w/100;
+   ['kcal','protein','fat','carb','fiber','salt'].forEach((key,i)=>{t[key]+=d[i]*factor;});
+  }
+  if(p==null)t.missingPrice.add(name+'（'+unit+'）');
+  else t.price+=p;
+  t.count++;
+ }
+ function addDish(t,recipeKey,excludesRice){
+  const rec=R[recipeKey];
+  if(!rec||!rec.ings?.length){
+   t.missingNutrition.add(rec?.n||'料理未登録');
+   t.missingPrice.add(rec?.n||'料理未登録');
+   return;
+  }
+  for(const [name,q,unit] of rec.ings){
+   // 古いレシピ内の「米」は主食として既に別計上しているため重ねない
+   if(excludesRice&&name==='米')continue;
+   countOne(t,name,Number(q),unit);
+  }
+ }
+ function addRice(t){countOne(t,'ご飯（炊飯後）',160,'g');}
+ function unresolved(t,message){t.missingNutrition.add(message);t.missingPrice.add(message);}
+ function totals(day){
+  const t=newTotals(),d=s.week[day],kind=mealKind(d.main),roles=mealRoles(d);
+  // 1人分の1日摂取量。夕食の取り分けは翌日の昼だけに含める。
+  for(const [name,q,unit] of breakfastEntries())countOne(t,name,Number(q),unit);
+  if(s.morningSoup){
+   if(day===0)unresolved(t,'月曜朝の汁物（前週の日曜未登録）');
+   else{
+    const prev=s.week[day-1],prevKind=mealKind(prev.main);
+    if(prevKind==='normal'||(prevKind==='pasta'&&prev.optionalSoup))addDish(t,prev.soup,false);
+    else unresolved(t,'朝の汁物（前夜が'+mealLabel(prevKind)+'）');
+   }
+  }
+  if(bentoNeeded(day)){
+   if(day===0)unresolved(t,'月曜の弁当（前週の日曜未登録）');
+   else{
+    const prev=s.week[day-1],kindPrev=mealKind(prev.main);
+    if(kindPrev==='normal'){
+     addDish(t,prev.main,true);
+     addDish(t,prev.side,false);
+     addRice(t);
+    }else unresolved(t,'弁当（前夜が'+mealLabel(kindPrev)+'）');
+   }
+  }
+  addDish(t,d.main,kind==='normal');
+  if(roles.includes('side'))addDish(t,d.side,false);
+  if(roles.includes('soup'))addDish(t,d.soup,false);
+  if(kind==='normal'||kind==='curry')addRice(t);
+  return t;
+ }
+ function weeklyPurchases(){
+  const lines=shoppingData(),miss=[];
+  let cost=0;
+  for(const line of lines){
+   if(line.needed<=0)continue;
+   const v=priced(line.name,line.needed,line.u);
+   if(v==null)miss.push(line.name+'（'+line.u+'）');else cost+=v;
+  }
+  return {cost,miss};
+ }
+ function budgetValue(){const b=Number(s.weeklyBudget);return s.weeklyBudget!==''&&allow(b)&&b>0?b:null;}
+ function signature(){
+  return JSON.stringify({
+   week:s.week,breakfast:s.breakfast,morningSoup:s.morningSoup,
+   noBentoDays:s.noBentoDays,people:s.people,
+   weeklyBudget:s.weeklyBudget,priceOverrides:s.priceOverrides,stock:s.stock
+  });
+ }
+ function snapshot(){
+  const daily=s.week.map((d,i)=>{
+   const t=totals(i);
+   const {missingNutrition,missingPrice,...numbers}=t;
+   return {...numbers,
+    missingNutrition:[...missingNutrition],missingPrice:[...missingPrice]
+   };
+  });
+  const purchase=weeklyPurchases(),b=budgetValue();
+  return {signature:signature(),daily,purchase,budget:b,people:Number(s.people)||1,time:new Date().toISOString()};
+ }
+ function isFresh(){return !!(s.analysis&&s.analysis.signature===signature()&&Array.isArray(s.analysis.daily)&&s.analysis.daily.length===7);}
+ function statusText(){
+  if(!s.analysis)return 'まだ計算していません。「栄養計算」ボタンを押してください。';
+  if(!isFresh())return '献立・食材・単価・設定が変更されています。再計算してください（表示中の数値は前回の計算結果です）。';
+  return '現在のレシピで集計済みです。献立を変更しても自動更新しません。';
+ }
+ function gapLabels(day){
+  const x=day.missingNutrition.length,y=day.missingPrice.length;
+  return (x?'栄養未算出 '+x+'件':'栄養データ内の食材は算出')+' / '+(y?'単価未設定 '+y+'件':'単価登録済み');
+ }
+ function priceLine(i,a){
+  const missing=a.missingPrice.length;
+  return '<div class="costday"><span>'+daynames[i]+'曜</span><strong>'+money(a.price*aPeople())+(missing?'〜':'')+'</strong><small>'+(missing?'未登録単価 '+missing+'件':'仮単価で試算')+'</small></div>';
+ }
+ function aPeople(){return s.analysis?.people||Number(s.people)||1;}
+ function dailyTables(a){
+  const rows=a.daily.map((d,i)=>{
+   const nutrition=d.missingNutrition.length?'（一部食材未算出）':'（仮値）';
+   return '<tr><th scope="row">'+daynames[i]+'曜</th>'+
+    '<td>'+money(d.price*a.people)+(d.missingPrice.length?' ※':'')+'</td>'+
+    '<td>'+nf(d.kcal)+' kcal '+(d.missingNutrition.length?'※':'')+'</td>'+
+    '<td>'+nf(d.protein,1)+' g</td><td>'+nf(d.fat,1)+' g</td>'+
+    '<td>'+nf(d.carb,1)+' g</td><td>'+nf(d.fiber,1)+' g</td><td>'+nf(d.salt,1)+' g</td></tr>';
+  }).join('');
+  return '<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>曜日</th><th>食費</th><th>熱量</th><th>たんぱく質</th><th>脂質</th><th>炭水化物</th><th>食物繊維</th><th>食塩相当量</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+   '<p class="subtle">※ 未算出食材がある日の数値は、確認できた材料のみの小計です。完全な1日摂取量ではありません。食費は設定した仮単価による概算です。</p>';
+ }
+ function summaryHTML(){
+  const a=s.analysis;
+  if(!a)return '<p class="analysis-empty">未集計です。献立が決まったら上のボタンで計算してください。</p>';
+  const spent=a.purchase.cost,canCompare=a.budget!=null&&!a.purchase.miss.length;
+  const budget=a.budget==null?'未設定':money(a.budget);
+  const diff=canCompare?money(a.budget-spent):'未確定';
+  const over=canCompare&&spent>a.budget;
+  const total=a.daily.reduce((sum,d)=>sum+d.price*a.people,0);
+  const gaps=a.daily.flatMap((d,i)=>{
+   const parts=[...new Set([...d.missingNutrition,...d.missingPrice])];
+   return parts.length?['<strong>'+daynames[i]+'曜：</strong>'+parts.map(esc).join('、')]:[];
+  });
+  return '<div class="analysis-kpis">'+
+   '<div><small>週の食費予算</small><strong>'+budget+'</strong></div>'+
+   '<div><small>1週間の購入見込み</small><strong>'+money(spent)+(a.purchase.miss.length?' ※':'')+'</strong></div>'+
+   '<div><small>予算との差額</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
+   '<div><small>今週の食事分（参考）</small><strong>'+money(total)+'</strong></div></div>'+
+   '<p class="analysis-foot">購入見込みは在庫を差し引いた買い物リストから算出。各日の食費は食べる料理の材料費です。両者は一致しません。'+
+    (a.purchase.miss.length?'未登録の食材単価：'+a.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
+   '<h3>曜日別の食費・栄養素</h3>'+dailyTables(a)+
+   (gaps.length?'<details class="analysis-gaps"><summary>計算に含められなかった食材・食事（'+gaps.length+'日）</summary><p>'+gaps.join('</p><p>')+'</p></details>':'');
+ }
+ function renderPanel(){
+  const summary=el('analysis-summary');
+  if(summary)summary.innerHTML=summaryHTML();
+  const status=el('analysis-status');
+  if(status){status.textContent=statusText();status.className='analysis-status '+(!isFresh()?'analysis-stale':'analysis-fresh');}
+  document.querySelectorAll('[data-cost-day]').forEach(node=>{
+   const i=Number(node.dataset.costDay);
+   const item=s.analysis?.daily?.[i];
+   node.innerHTML=item?
+    '<div class="cost-label"><span>1日の食費（概算）</span><strong>'+money(item.price*aPeople())+(item.missingPrice.length?' ※':'')+'</strong></div>'+
+    (!isFresh()?'<div class="mealnote">前回の集計結果</div>':''):
+    '<div class="cost-label muted">1日の食費：未集計</div>';
+  });
+ }
+ const oldPlanner=renderPlanner;
+ renderPlanner=function(){oldPlanner();renderPanel();};
+ const oldSettings=renderSettings;
+ renderSettings=function(){oldSettings();renderPrices();};
+ const oldNutrition=renderNutrition;
+ renderNutrition=function(){
+  if(!s.analysis){
+   el('nutrients').innerHTML='<p>栄養計算は未実行です。献立画面の「栄養計算」ボタンで集計してください。</p>';
+   el('nutrition-gaps').innerHTML='<p>日本食品標準成分表の食品コード照合は未実装です。下記は仮の参考値であり、ビタミンやミネラルの正確な値は算出していません。</p>';
+   return;
+  }
+  el('nutrients').innerHTML=summaryHTML();
+  el('nutrition-gaps').innerHTML='<p>食品成分データはアプリ内の仮参考値です。食品ごとの分析値ではありません。エネルギー・たんぱく質・脂質・炭水化物・食物繊維・食塩相当量のみを概算しています。</p>'+
+  '<p><a href="https://fooddb.mext.go.jp/" target="_blank" rel="noopener noreferrer">文部科学省 食品成分データベース（食品の正確な成分値を確認）</a></p>'+
+  (isFresh()?'':'<p class="warning">前回の集計結果です。変更を反映するには献立画面で再計算してください。</p>');
+ };
+ function renderPrices(){
+  const master=el('price-master');if(!master)return;
+  const names=new Map();
+  for(const x of shoppingData())names.set(x.name+'|'+x.u,{name:x.name,unit:x.u});
+  const entries=[...names.values()].sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  master.innerHTML='<p class="small muted">現在の献立で使用する食材の仮単価です。1単位あたりの金額を変更できます。未入力なら初期の仮単価を利用します。</p>'+
+   '<div class="price-list">'+entries.map(x=>{
+    const key=x.name+'|'+x.unit;
+    const base=(x.unit==='g'||x.unit==='ml')?'100'+x.unit:'1'+x.unit;
+    const def=unitPrice(x.name,x.unit);
+    return '<label class="price-row"><span>'+esc(x.name)+'<small> / '+esc(base)+'</small></span>'+
+     '<input data-price-value="'+esc(key)+'" type="number" min="0" step="0.1" value="'+(def==null?'':Number(def))+'" placeholder="未設定" aria-label="'+esc(x.name)+'の単価">'+
+     '<span>円</span></label>';
+   }).join('')+'</div>'+
+   '<p class="subtle">数量の基準は、g/mlの場合は100単位、卵は1個、納豆は1パックなどです。値は店舗価格ではなく仮の参考単価です。</p>';
+ }
+ el('run-nutrition').onclick=()=>{
+  s.analysis=snapshot();
+  save();renderPanel();renderNutrition();
+  const section=el('analysis-summary');if(section?.scrollIntoView)section.scrollIntoView({behavior:'smooth',block:'start'});
+ };
+ el('save-price-master').onclick=()=>{
+  const inputs=[...document.querySelectorAll('[data-price-value]')],next={};
+  for(const inp of inputs){
+   if(!inp.value.trim())continue;
+   const n=Number(inp.value);
+   if(!allow(n)||n>1e6){alert('食材単価は0円以上の数値で入力してください。');return;}
+   next[inp.dataset.priceValue]=n;
+  }
+  s.priceOverrides=next;save();renderPlanner();renderSettings();
+  alert('食材単価を保存しました。栄養計算ボタンで再集計してください。');
+ };
+ renderPlanner();renderSettings();renderPanel();
+})();
