@@ -83,8 +83,7 @@
  function addDish(t,recipeKey,excludesRice){
   const rec=R[recipeKey];
   if(!rec||!rec.ings?.length){
-   t.missingNutrition.add(rec?.n||'料理未登録');
-   t.missingPrice.add(rec?.n||'料理未登録');
+   unresolved(t,rec?.n||'料理未登録');
    return;
   }
   for(const [name,q,unit] of rec.ings){
