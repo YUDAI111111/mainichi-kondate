@@ -114,6 +114,7 @@ function newWeekForReset(){
  }
  function choose(slot,avoid,used,preferCat){
    let list=Object.keys(R).filter(k=>R[k].cat===slot&&k!=='pasta'&&safe(k)&&!used.has(k));
+   if(!list.length){used.clear();list=Object.keys(R).filter(k=>R[k].cat===slot&&k!=='pasta'&&safe(k));}
    if(preferCat){const matching=list.filter(k=>R[k].cuisine===preferCat);if(matching.length)list=matching}
    const notSame=list.filter(k=>k!==avoid);
    if(notSame.length)list=notSame;
