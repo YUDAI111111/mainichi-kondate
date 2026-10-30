@@ -120,7 +120,7 @@
     }else unresolved(lunch,'弁当（前夜が'+mealLabel(kindPrev)+'）');
    }
   }
-  addDish(dinner,d.main,kind==='normal');
+  addDish(dinner,d.main,kind==='normal'||kind==='curry');
   if(roles.includes('side'))addDish(dinner,d.side,false);
   if(roles.includes('soup'))addDish(dinner,d.soup,false);
   if(kind==='normal'||kind==='curry')addRice(dinner);
@@ -193,7 +193,7 @@
     }else miss.add('弁当（別途準備）');
    }
   }
-  dish(current.main,kind==='normal');
+  dish(current.main,kind==='normal'||kind==='curry');
   if(roles.includes('side'))dish(current.side,false);
   if(roles.includes('soup'))dish(current.soup,false);
   if(kind==='normal'||kind==='curry')rice();
