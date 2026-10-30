@@ -158,6 +158,66 @@
   return {cost,miss:[...new Set(miss)]};
  }
  function budgetValue(){const b=Number(s.weeklyBudget);return s.weeklyBudget!==''&&allow(b)&&b>0?b:null;}
+
+ function liveCostDay(day){
+  const current=s.week[day],kind=mealKind(current.main),roles=mealRoles(current);
+  let amount=0,miss=new Set();
+  function food(name,q,unit){
+   const price=priced(name,Number(q),unit);
+   if(price==null)miss.add(name+' ('+unit+')');else amount+=price;
+  }
+  function dish(key,skipRice){
+   const r=R[key];
+   if(!r?.ings?.length){miss.add(r?.n||'料理未登録');return;}
+   for(const [name,q,unit] of r.ings){
+    if(skipRice&&name==='米')continue;
+    food(name,q,unit);
+   }
+  }
+  function rice(){food('ご飯（炊飯後）',160,'g');}
+  for(const [name,q,unit] of breakfastEntries())food(name,q,unit);
+  if(s.morningSoup){
+   if(day===0)miss.add('月曜朝の汁物（前週未登録）');
+   else{
+    const p=s.week[day-1],k=mealKind(p.main);
+    if(k==='normal'||(k==='pasta'&&p.optionalSoup))dish(p.soup,false);
+    else miss.add('朝の汁物（別途準備）');
+   }
+  }
+  if(bentoNeeded(day)){
+   if(day===0)miss.add('月曜の弁当（前週未登録）');
+   else{
+    const p=s.week[day-1];
+    if(mealKind(p.main)==='normal'){
+     dish(p.main,true);dish(p.side,false);rice();
+    }else miss.add('弁当（別途準備）');
+   }
+  }
+  dish(current.main,kind==='normal');
+  if(roles.includes('side'))dish(current.side,false);
+  if(roles.includes('soup'))dish(current.soup,false);
+  if(kind==='normal'||kind==='curry')rice();
+  return {price:amount*(Number(s.people)||1),missing:[...miss]};
+ }
+ function liveCostSummary(){
+  const daily=s.week.map((_,i)=>liveCostDay(i)),purchase=weeklyPurchases(),budget=budgetValue();
+  const miss=purchase.miss.length>0;
+  const diff=budget==null?'予算未設定':
+   miss?(purchase.cost>budget?'少なくとも '+money(purchase.cost-budget)+'超過':'残り最大 '+money(budget-purchase.cost)):
+   money(budget-purchase.cost);
+  return {daily,purchase,budget,miss,diff,spent:daily.reduce((sum,d)=>sum+d.price,0)};
+ }
+ function liveCostMarkup(){
+  const c=liveCostSummary();
+  return '<div class="analysis-kpis auto-cost-kpis">'+
+    '<div><small>週予算</small><strong>'+(c.budget==null?'未設定':money(c.budget))+'</strong></div>'+
+    '<div><small>今週の購入見込み（計算済み分）</small><strong>'+money(c.purchase.cost)+(c.miss?' ※':'')+'</strong></div>'+
+    '<div><small>予算との差額'+(c.miss?'（未計上あり）':'')+'</small><strong>'+c.diff+'</strong></div>'+
+    '<div><small>1日平均材料費（算出済み分）</small><strong>'+money(c.spent/7)+'</strong></div>'+
+   '</div><p class="analysis-foot">食費だけは自動更新。栄養素は手動計算のままです。'+
+    (c.miss?' ※ 未計上の料理・食材があります。予算内と確定できません。':'')+'</p>';
+ }
+ 
  function signature(){
   return JSON.stringify({
    version:2,week:s.week,breakfast:s.breakfast,morningSoup:s.morningSoup,
@@ -190,9 +250,9 @@
  function aPeople(){return s.analysis?.people||Number(s.people)||1;}
  function dailyTables(a){
   const rows=a.daily.map((d,i)=>{
-   const nutrition=d.missingNutrition.length?'（一部食材未算出）':'（仮値）';
+   const cost=liveCostDay(i);
    return '<tr><th scope="row">'+daynames[i]+'曜</th>'+
-    '<td>'+money(d.price*a.people)+(d.missingPrice.length?' ※':'')+'</td>'+
+    '<td>'+money(cost.price)+(cost.missing.length?' ※':'')+'</td>'+
     '<td>'+nf(d.kcal)+' kcal '+(d.missingNutrition.length?'※':'')+'</td>'+
     '<td>'+nf(d.protein,1)+' g</td><td>'+nf(d.fat,1)+' g</td>'+
     '<td>'+nf(d.carb,1)+' g</td><td>'+nf(d.fiber,1)+' g</td><td>'+nf(d.salt,1)+' g</td></tr>';
@@ -203,39 +263,38 @@
  function summaryHTML(){
   const a=s.analysis;
   if(!a)return '<p class="analysis-empty">未集計です。献立が決まったら上のボタンで計算してください。</p>';
-  const spent=a.purchase.cost,hasMissing=a.purchase.miss.length>0;
-  const budget=a.budget==null?'未設定':money(a.budget);
-  const over=a.budget!=null&&spent>a.budget;
-  const diff=a.budget==null?'未設定':
-   hasMissing?(over?'少なくとも '+money(spent-a.budget)+'超過':'残り最大 '+money(a.budget-spent)):
-   money(a.budget-spent);
-  const total=a.daily.reduce((sum,d)=>sum+d.price*a.people,0);
+  const live=liveCostSummary(),spent=live.purchase.cost,hasMissing=live.miss;
+  const budget=live.budget==null?'未設定':money(live.budget);
+  const over=live.budget!=null&&spent>live.budget;
+  const diff=live.diff;
+  const total=live.spent;
   const gaps=a.daily.flatMap((d,i)=>{
    const parts=[...new Set([...d.missingNutrition,...d.missingPrice])];
    return parts.length?['<strong>'+daynames[i]+'曜：</strong>'+parts.map(esc).join('、')]:[];
   });
   return '<div class="analysis-kpis">'+
    '<div><small>週の食費予算</small><strong>'+budget+'</strong></div>'+
-   '<div><small>1週間の購入見込み（算出済み分）</small><strong>'+money(spent)+(a.purchase.miss.length?' ※':'')+'</strong></div>'+
+   '<div><small>1週間の購入見込み（算出済み分）</small><strong>'+money(spent)+(live.purchase.miss.length?' ※':'')+'</strong></div>'+
    '<div><small>週予算との差額'+(hasMissing?'（未計上あり）':'')+'</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
    '<div><small>今週の食事分（参考）</small><strong>'+money(total)+'</strong></div></div>'+
    '<p class="analysis-foot">購入見込みは在庫差引後の買い物リストから算出。各日の食費は食べる料理の材料費です。計上範囲が異なり、一致するとは限りません。'+
-    (a.purchase.miss.length?'未計上の材料・食事・単価：'+a.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
+    (live.purchase.miss.length?'未計上の材料・食事・単価：'+live.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
    '<h3>曜日別の食費・栄養素</h3>'+dailyTables(a)+
    (gaps.length?'<details class="analysis-gaps"><summary>計算に含められなかった食材・食事（'+gaps.length+'日）</summary><p>'+gaps.join('</p><p>')+'</p></details>':'');
  }
  function renderPanel(){
   const summary=el('analysis-summary');
   if(summary)summary.innerHTML=summaryHTML();
+  const header=el('live-cost-summary');
+  if(header)header.innerHTML=liveCostMarkup();
+  const shoppingCost=el('shopping-live-cost');
+  if(shoppingCost)shoppingCost.innerHTML=liveCostMarkup();
   const status=el('analysis-status');
   if(status){status.textContent=statusText();status.className='analysis-status '+(!isFresh()?'analysis-stale':'analysis-fresh');}
   document.querySelectorAll('[data-cost-day]').forEach(node=>{
-   const i=Number(node.dataset.costDay);
-   const item=s.analysis?.daily?.[i];
-   node.innerHTML=item?
-    '<div class="cost-label"><span>1日の食費（概算）</span><strong>'+money(item.price*aPeople())+(item.missingPrice.length?' ※':'')+'</strong></div>'+
-    (!isFresh()?'<div class="mealnote">前回の集計結果</div>':''):
-    '<div class="cost-label muted">1日の食費：未集計</div>';
+   const i=Number(node.dataset.costDay),item=liveCostDay(i);
+   node.innerHTML='<div class="cost-label"><span>1日の食費（自動概算）</span><strong>'+money(item.price)+(item.missing.length?' ※':'')+'</strong></div>'+
+    (item.missing.length?'<div class="mealnote">未計上の食事・単価あり</div>':'');
   });
  }
  const oldPlanner=renderPlanner;
@@ -285,7 +344,9 @@
    next[inp.dataset.priceValue]=n;
   }
   s.priceOverrides=next;save();renderPlanner();renderSettings();
-  alert('食材単価を保存しました。栄養計算ボタンで再集計してください。');
+  alert('単価を保存しました。食費は自動更新済みです。栄養値は必要なときに再計算してください。');
  };
+ const oldShopping=renderShopping;
+ renderShopping=function(){oldShopping();renderPanel();};
  renderPlanner();renderSettings();renderPanel();
 })();
