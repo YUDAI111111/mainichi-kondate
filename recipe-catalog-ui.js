@@ -20,7 +20,7 @@ function renderCatalog(){
       ?"<strong>参考：</strong>"+esc(item.source)+"<div>掲載料理："+esc(item.original)+"</div><div>アプリで調整："+esc(item.adjustment||"未登録")+"</div>"
       :"家庭料理の登録例";
     return '<article class="catalog-card"><div class="catalog-meta">'+esc(item.cuisine)+" · "+esc(item.style)+" · "+esc(CATALOG_CATEGORY_LABEL[item.category])+
-      '</div><h3>'+esc(item.name)+'</h3><div class="catalog-note">'+ref+'</div><div class="catalog-actions"><a class="btn tiny" style="text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く ↗</a><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
+      '</div><h3>'+esc(item.name)+'</h3><div class="catalog-note">'+ref+'</div><div class="catalog-actions"><a class="btn tiny" style="text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
   }).join("")||"<p>条件に一致する料理はありません。</p>";
   document.querySelectorAll("[data-catalog-detail]").forEach(btn=>btn.onclick=()=>catalogDetail(btn.dataset.catalogDetail));
   document.querySelectorAll("[data-catalog-use]").forEach(btn=>btn.onclick=()=>catalogUse(btn.dataset.catalogUse));
@@ -37,7 +37,7 @@ function catalogDetail(recipeId){
     ?'<p class="small"><strong>参考：</strong>'+esc(item.source)+'／掲載料理：'+esc(item.original)+'</p><p class="small"><strong>アプリで調整：</strong>'+esc(item.adjustment||"未登録")+'</p>'
     :'<p class="small muted">家庭料理の登録例（アプリ内で作成した材料・調理手順）</p>';
   const sourceLink=item.url
-    ?'<p><a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">参考元レシピを別タブで開く ↗</a></p>'
+    ?'<p><a href="'+esc(item.url)+'" target="_blank" rel="noopener noreferrer">参考元レシピを別タブで開く</a></p>'
     :(item.original?'<p class="small muted">参考元の直接URLは未確認です。</p>':"");
   const steps=Array.isArray(rec?.steps)&&rec.steps.length
     ?'<h4>作り方（アプリ用の調理手順）</h4><ol style="padding-left:24px">'+rec.steps.map(step=>'<li style="margin:8px 0;line-height:1.7">'+esc(step)+'</li>').join("")+'</ol>'
