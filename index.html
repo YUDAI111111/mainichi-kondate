@@ -34,6 +34,18 @@
 <div id="nutrition" class="view"><div class="top"><div><div class="eyebrow">NUTRITION INSIGHT</div><h1>栄養バランス</h1><p>最終献立が決まってから、ビタミン・ミネラルまで確認します。</p></div></div><div class="warning" style="margin-bottom:20px"><b>栄養素の数値はまだ算出していません。</b> 日本食品標準成分表との紐付け、食品重量、調理損失、栄養摂取基準が必要です。データがないのにビタミン値を推測して表示することはしません。</div><div class="panel"><h2>分析予定の栄養素</h2><p class="small muted">初期版では「未計算」を明示します。公式食品成分データを連携してから自動計算に切り替える設計です。</p><div class="nutrients" id="nutrients"></div></div><section class="section"><div class="panel"><h2>栄養確認前の未確定事項</h2><div id="nutrition-gaps"></div></div></section></div>
 <div id="recipes" class="view"><div class="top"><div><div class="eyebrow">RECIPE COLLECTION</div><h1>料理のレパートリー</h1><p>料理名・系統・参考料理家から検索。確認できない材料や調理手順は未登録として扱います。</p></div></div><div class="catalog-controls"><select id="catalog-category"><option value="">料理の種類：すべて</option><option value="main">主菜</option><option value="side">副菜</option><option value="soup">汁物</option><option value="pot">鍋</option><option value="curry">カレー</option></select><select id="catalog-cuisine"><option value="">系統：すべて</option><option>和風</option><option>洋風</option><option>中華</option></select><select id="catalog-source"><option value="">参考元：すべて</option><option value="家庭料理の登録例">家庭料理の登録例</option><option value="長谷川あかり">長谷川あかり</option><option value="リュウジ">リュウジ</option><option value="オレンジページ">オレンジページ</option><option value="その他の料理家">その他の料理家</option></select><input id="catalog-query" type="search" placeholder="料理名・料理家" aria-label="料理名・料理家検索"></div><div class="catalog-info" id="catalog-count"></div><div class="catalog-grid" id="catalog-grid"></div></div><div id="settings" class="view"><div class="top"><div><div class="eyebrow">PERSONAL PREFERENCES</div><h1>献立の設定</h1><p>好き嫌い・人数・朝の汁物は自由に編集できます。</p></div></div><div class="two"><div class="panel"><h2>食事の基本設定</h2>
 <div class="field"><label for="people">食事人数</label><input id="people" type="number" min="1" max="20" step="1" style="width:108px"><p class="subtle">食材数量と取り分け量に反映</p></div>
+<div class="field bento-settings"><h3 class="breakfast-title">弁当が不要な曜日</h3>
+<p class="small muted">弁当を作らない曜日にチェック。土日は初期設定で不要です。</p>
+<div class="bento-day-grid" id="bento-day-grid">
+<label class="bento-day"><input type="checkbox" data-no-bento-day="0" aria-label="月曜日は弁当不要"><span>月</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="1" aria-label="火曜日は弁当不要"><span>火</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="2" aria-label="水曜日は弁当不要"><span>水</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="3" aria-label="木曜日は弁当不要"><span>木</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="4" aria-label="金曜日は弁当不要"><span>金</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="5" aria-label="土曜日は弁当不要"><span>土</span></label>
+<label class="bento-day"><input type="checkbox" data-no-bento-day="6" aria-label="日曜日は弁当不要"><span>日</span></label>
+</div>
+<p class="subtle">チェックを外した日の弁当は、前夜の夕食から取り分けます（通常献立の場合）。</p></div>
 <h3 class="breakfast-title">朝食</h3><p class="small muted">納豆と目玉焼きは固定です。ほかの品は追加したいものだけ選択します。</p>
 <div class="breakfast-row"><label for="breakfast-natto">納豆（パック）</label><input id="breakfast-natto" type="number" min="0" max="20" step="1"><label for="breakfast-eggs">目玉焼き（個）</label><input id="breakfast-eggs" type="number" min="0" max="20" step="1"></div>
 <div class="field"><label class="check-label"><input id="breakfast-rice-enabled" type="checkbox"> ご飯を追加</label></div>
@@ -90,7 +102,7 @@ for(const item of KONDATE_CATALOG){
  R[item.appId].cuisine=item.cuisine;R[item.appId].mealKind=item.category;
  if(["pot","curry"].includes(item.category))R[item.appId].isOneDish=true;
 }
-const initial={people:1,morningSoup:true,pastaCount:2,budget:'',breakfast:{nattoPacks:1,eggs:1,riceEnabled:true,riceGrams:300,sausageEnabled:false,oilGrams:3,extras:''},week:[
+const initial={people:1,morningSoup:true,pastaCount:2,budget:'',noBentoDays:[5,6],breakfast:{nattoPacks:1,eggs:1,riceEnabled:true,riceGrams:300,sausageEnabled:false,oilGrams:3,extras:''},week:[
 {main:'shogayaki',side:'komatsu',soup:'wakamesoup'},
 {main:'catalog_recipe_002',side:'catalog_recipe_075',soup:'catalog_recipe_067'},
 {main:'pasta',side:'spinach',soup:'mushroom',optionalSoup:false},
@@ -99,7 +111,7 @@ const initial={people:1,morningSoup:true,pastaCount:2,budget:'',breakfast:{natto
 {main:'pasta',side:'atsu',soup:'cabbage',optionalSoup:false},
 {main:'catalog_recipe_038',side:'shiraae',soup:'daikon',optionalSide:true}],prefs:[],likes:[],rejected:[],ratings:{},stock:[],checked:{},counts:{},history:[]};
 function copy(o){return JSON.parse(JSON.stringify(o))};
-let s;try{let r=JSON.parse(localStorage.getItem('kondate_10'));s=Object.assign(copy(initial),r||{});if(!Array.isArray(s.week)||s.week.length!==7)throw Error('bad');s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{})}catch(e){s=copy(initial)}
+let s;try{let r=JSON.parse(localStorage.getItem('kondate_10'));s=Object.assign(copy(initial),r||{});if(!Array.isArray(s.week)||s.week.length!==7)throw Error('bad');s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{});s.noBentoDays=Array.isArray(s.noBentoDays)?[...new Set(s.noBentoDays.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]:[5,6]}catch(e){s=copy(initial)}
 const daynames=['月','火','水','木','金','土','日']; const slots=['main','side','soup'];const slotNames={main:'主菜',side:'副菜',soup:'汁物'};
 function save(){localStorage.setItem('kondate_10',JSON.stringify(s))};function el(id){return document.getElementById(id)};function esc(str){return String(str??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};function id(i,t){return `${i}-${t}`};
 function showView(name){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===name));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===name)); if(name==='ai')renderAI();if(name==='shopping')renderShopping();if(name==='nutrition')renderNutrition();if(name==='recipes')renderCatalog();if(name==='settings')renderSettings()};document.querySelectorAll('[data-view]').forEach(x=>x.addEventListener('click',()=>showView(x.dataset.view)));
@@ -132,7 +144,39 @@ function breakfastLabel(){
  if(s.morningSoup)result.push('汁物（前夜分または別調理）');
  return result.join('・')||'朝食未設定';
 }
-function mealLunch(i){const p=s.week[i-1];if(!p)return '弁当（週初めの献立要登録）';const kind=mealKind(p.main);if(kind!=='normal')return '弁当（前夜が'+mealLabel(kind)+'のため別途準備）';return R[p.main]?.n+'（前夜に取り分け）'}
+function bentoNeeded(i){return !s.noBentoDays?.includes((i+7)%7)}
+function mealLunch(i){
+ if(!bentoNeeded(i))return '弁当なし';
+ const p=s.week[i-1];
+ if(!p)return '弁当を準備（前週の夕食は未登録）';
+ const kind=mealKind(p.main);
+ if(kind!=='normal')return '別途準備（前夜は'+mealLabel(kind)+'）';
+ const main=R[p.main]?.n||'主菜未登録',side=R[p.side]?.n||'副菜未登録';
+ return main+'＋'+side+'（前夜に取り分け）';
+}
+function breakfastMarkup(i){
+ const b=s.breakfast||initial.breakfast;
+ const items=[];
+ const row=(name,amount)=>'<div class="breakfast-item"><span>'+esc(name)+'</span><b>'+esc(amount)+'</b></div>';
+ if(Number(b.nattoPacks)>0)items.push(row('納豆',b.nattoPacks+'パック'));
+ if(Number(b.eggs)>0)items.push(row('目玉焼き',b.eggs+'個'));
+ if(b.riceEnabled&&Number(b.riceGrams)>0)items.push(row('ご飯（炊飯後）',b.riceGrams+'g'));
+ if(b.sausageEnabled)items.push(row('ウインナー','2本'));
+ if(Number(b.eggs)>0&&Number(b.oilGrams)>0)items.push(row('調理油',b.oilGrams+'g'));
+ const rest=breakfastEntries().filter(([n])=>!['納豆','卵','ご飯（炊飯後）','ウインナー','調理油'].includes(n));
+ for(const [name,amount,unit] of rest)items.push(row(name,amount+unit));
+ let soup='';
+ if(s.morningSoup){
+  if(i===0)soup='汁物：前週分未登録';
+  else{
+   const prev=s.week[i-1],kind=mealKind(prev.main);
+   if(kind==='normal'||(kind==='pasta'&&prev.optionalSoup))soup='汁物：'+(R[prev.soup]?.n||'前夜の汁物');
+   else soup='汁物：別途準備';
+  }
+ }
+ return '<div class="breakfast-foods">'+(items.join('')||'<p class="mealnote">朝食が未設定です</p>')+'</div>'+
+  (soup?'<div class="breakfast-soup">'+esc(soup)+'</div>':'');
+}
 function recipeLinkFromPlan(recipeKey,day,slot){
  const item=KONDATE_CATALOG.find(x=>x.appId===recipeKey);
  if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a>'}
@@ -191,8 +235,8 @@ function renderPlanner(){
   if(kind==='pasta')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="soup">'+(d.optionalSoup?'汁物を外す':'汁物を追加（任意）')+'</button>';
   if(kind==='pot'||kind==='curry')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="side">'+(d.optionalSide?'副菜を外す':'副菜を追加（任意）')+'</button>';
   return '<div class="day"><div class="daytitle"><strong>'+daynames[i]+'曜日</strong><small>'+(i+1)+'日目</small></div>'+
-   '<div class="mealblock"><div class="meallabel">朝食</div><div class="mealname">'+esc(breakfastLabel())+'</div></div>'+
-   '<div class="mealblock"><div class="meallabel">弁当</div><div class="mealname">'+esc(mealLunch(i))+'</div></div>'+
+   '<div class="mealblock breakfast-block"><div class="meallabel">朝食</div>'+breakfastMarkup(i)+'</div>'+
+   '<div class="mealblock lunch-block '+(!bentoNeeded(i)?'no-bento':'')+'"><div class="meallabel">弁当</div><div class="mealname">'+esc(mealLunch(i))+'</div></div>'+
    '<div class="mealblock"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
    '<div class="toolbar" style="gap:4px;margin:7px 0;flex-wrap:wrap">'+selectors+'</div>'+cards+optional+'</div></div>';
  }).join('');
@@ -266,12 +310,13 @@ function shoppingData(){
  };
  for(let i=0;i<7;i++){
   const d=s.week[i],kind=mealKind(d.main),parts=mealRoles(d);
-  // 夕食主菜を翌日の弁当に取り分ける場合は2人前を作る。
-  // 鍋・カレー・パスタは弁当への自動流用をしない。
-  add(R[d.main],s.people*(kind==='normal'?2:1));
-  if(parts.includes('side'))add(R[d.side],s.people);
+  // 弁当が必要な翌日だけ、通常献立の主菜・副菜を追加で1食分用意。
+  // 日曜の夕食は翌週月曜の弁当へ取り分け可能。
+  const extra=(kind==='normal'&&bentoNeeded((i+1)%7))?1:0;
+  add(R[d.main],s.people*(1+extra));
+  if(parts.includes('side'))add(R[d.side],s.people*(1+extra));
   if(parts.includes('soup'))add(R[d.soup],s.people*(s.morningSoup?2:1));
-  if(kind==='normal'||kind==='curry')add({ings:[['ご飯（炊飯後）',160,'g']]},s.people*(kind==='normal'?2:1));
+  if(kind==='normal'||kind==='curry')add({ings:[['ご飯（炊飯後）',160,'g']]},s.people*(1+extra));
   add({ings:breakfastEntries()},s.people);
  }
  return Object.values(agg).map(x=>{
@@ -355,6 +400,7 @@ function renderNutrition(){el('nutrients').innerHTML=nutrients.map(n=>`<div clas
 function renderSettings(){
  const b=Object.assign({},initial.breakfast,s.breakfast||{});
  el('people').value=s.people;
+ document.querySelectorAll('[data-no-bento-day]').forEach(box=>{box.checked=!bentoNeeded(+box.dataset.noBentoDay)});
  el('breakfast-natto').value=b.nattoPacks;
  el('breakfast-eggs').value=b.eggs;
  el('breakfast-rice-enabled').checked=!!b.riceEnabled;
@@ -383,6 +429,7 @@ el('savesettings').onclick=()=>{
    if(values.length!==3||!values[0]||!Number.isFinite(Number(values[1]))||Number(values[1])<=0||!['g','ml','個','本','パック'].includes(values[2]))return alert('追加食材の'+(i+1)+'行目が正しくありません。食材名,数量,単位で入力してください。');
  }
  s.people=people;
+ s.noBentoDays=Array.from(document.querySelectorAll('[data-no-bento-day]')).filter(box=>box.checked).map(box=>Number(box.dataset.noBentoDay));
  s.breakfast={
    nattoPacks:Number(el('breakfast-natto').value),
    eggs:Number(el('breakfast-eggs').value),
@@ -450,7 +497,7 @@ el('reset-menu').onclick=()=>{
 
 el('reset-ratings').onclick=()=>{if(confirm('「おいしそう」の評価記録をリセットしますか？献立そのものは維持します。')){s.ratings={};s.likes=[];s.rejected=[];save();renderPlanner()}};
 el('export').onclick=()=>{let blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kondate-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-el('importbtn').onclick=()=>el('importfile').click();el('importfile').onchange=async e=>{let file=e.target.files?.[0];if(!file)return;try{let d=JSON.parse(await file.text());if(!Array.isArray(d.week)||d.week.length!==7||!Array.isArray(d.prefs))throw Error('format');s=Object.assign(copy(initial),d);save();renderPlanner();renderSettings();alert('読み込みました')}catch(ex){alert('保存データの形式を確認できませんでした。')}};
+el('importbtn').onclick=()=>el('importfile').click();el('importfile').onchange=async e=>{let file=e.target.files?.[0];if(!file)return;try{let d=JSON.parse(await file.text());if(!Array.isArray(d.week)||d.week.length!==7||!Array.isArray(d.prefs))throw Error('format');s=Object.assign(copy(initial),d);s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{});s.noBentoDays=Array.isArray(d.noBentoDays)?[...new Set(d.noBentoDays.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]:[5,6];save();renderPlanner();renderSettings();alert('読み込みました')}catch(ex){alert('保存データの形式を確認できませんでした。')}};
 el('resetall').onclick=()=>{if(confirm('全ての設定・評価・在庫を消去し初期状態に戻しますか？')){s=copy(initial);save();renderPlanner();renderSettings()}};
 function modal(title,html){el('modaltitle').textContent=title;el('modalcontent').innerHTML=html;el('modalbg').classList.add('show')};el('modalclose').onclick=()=>el('modalbg').classList.remove('show');el('modalbg').onclick=e=>{if(e.target===el('modalbg'))el('modalbg').classList.remove('show')};
 renderPlanner();renderSettings();
