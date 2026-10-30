@@ -20,8 +20,7 @@ function renderCatalog(){
       ?"<strong>参考：</strong>"+esc(item.source)+"<div>掲載料理："+esc(item.original)+"</div><div>アプリで調整："+esc(item.adjustment||"未登録")+"</div>"
       :"家庭料理の登録例";
     return '<article class="catalog-card"><div class="catalog-meta">'+esc(item.cuisine)+" · "+esc(item.style)+" · "+esc(CATALOG_CATEGORY_LABEL[item.category])+
-      '</div><h3>'+esc(item.name)+'</h3><div class="catalog-note">'+ref+'</div><div class="catalog-actions"><button class="btn tiny" data-catalog-detail="'+esc(item.id)+
-      '">材料・作り方を見る</button><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
+      '</div><h3>'+esc(item.name)+'</h3><div class="catalog-note">'+ref+'</div><div class="catalog-actions"><a class="btn tiny" style="text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く ↗</a><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
   }).join("")||"<p>条件に一致する料理はありません。</p>";
   document.querySelectorAll("[data-catalog-detail]").forEach(btn=>btn.onclick=()=>catalogDetail(btn.dataset.catalogDetail));
   document.querySelectorAll("[data-catalog-use]").forEach(btn=>btn.onclick=()=>catalogUse(btn.dataset.catalogUse));
