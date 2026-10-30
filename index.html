@@ -600,9 +600,9 @@ function fmt(n){return Number.isInteger(n)?n:n.toFixed(1)};
 function renderShopping(){el('shoppingbody').innerHTML=shoppingData().map(x=>`<tr class="${s.checked[x.name+'|'+x.u]?'done':''}"><td><input type="checkbox" data-check="${esc(x.name+'|'+x.u)}" ${s.checked[x.name+'|'+x.u]?'checked':''}></td><td>${esc(x.name)}</td><td>${fmt(x.needed)} ${esc(x.u)}</td></tr>`).join('');document.querySelectorAll('[data-check]').forEach(c=>c.onchange=()=>{s.checked[c.dataset.check]=c.checked;save();renderShopping()});el('stocks').innerHTML=s.stock.map((x,i)=>`<div class="tag">${esc(x.name)} ${fmt(x.q)}${esc(x.u)} <button title="削除" data-remove-stock="${i}">×</button></div>`).join('')||'<p class="small muted">在庫登録なし</p>';document.querySelectorAll('[data-remove-stock]').forEach(b=>b.onclick=()=>{s.stock.splice(+b.dataset.removeStock,1);save();renderShopping()})};
 el('addstock').onclick=()=>{let name=el('stock-name').value.trim(),q=+el('stock-quantity').value,u=el('stock-unit').value;if(!name||!Number.isFinite(q)||q<=0)return alert('食材名と正しい数量を入力してください。');s.stock.push({name,q,u});save();el('stock-name').value='';el('stock-quantity').value='';renderShopping()};
 el('copy-shopping').onclick=()=>{let t='買い物リスト\n'+shoppingData().filter(x=>x.needed>0).map(x=>`${x.name} ${fmt(x.needed)}${x.u}`).join('\n');navigator.clipboard?.writeText(t).then(()=>alert('コピーしました')).catch(()=>modal('買い物リスト',`<pre>${esc(t)}</pre>`))||modal('買い物リスト',`<pre>${esc(t)}</pre>`)};
-function getPrompt(){let mode=el('ai-mode').value;const prefs=s.prefs.map(p=>`${p.type}: ${p.name}`).join('、');let base=`あなたは個人用の献立生成AIです。材料数量を含むJSONのみを返してください。コードブロックや説明文は付けないでください。\n条件：${s.people}人分。通常の夕食は主菜・副菜・汁物を同系統で揃える。パスタは単品・副菜なし・汁物任意。鍋は主菜と汁物を兼ね副菜任意。カレーは単品・副菜任意、別の主菜と汁物は不要。朝食は設定された食材だけを使用。朝食1人分：${JSON.stringify(breakfastEntries())}。朝の汁物：${s.morningSoup?'必要。前夜から取り分ける':'不要'}。翌日の弁当は、弁当が必要な曜日に限り、前夜の通常献立の主菜・副菜をそれぞれ2食分作って取り分ける。弁当不要の曜日：${(s.noBentoDays||[]).map(i=>daynames[i]+'曜').join('、')||'なし'}。食事記録上の重複計上は禁止。鍋・カレー・パスタの翌日の弁当は別途準備とする。パスタは週${s.pastaCount}回、本人指定のレシピを勝手に作らない。白米に合う主菜を優先。酸味の強い味付けを避ける。長野の季節を考慮。\n登録制限：${prefs}。登録されたアレルギー食材を絶対に使用しない。条件付き食材は条件を厳守する。\n料理の各材料は {name,quantity,unit} を列挙し、unitはg/個/本/パックのいずれか。本人が入力していないパスタの材料は推測せず空配列にする。\n評価で却下済み料理：${s.rejected.map(id=>R[id]?.n).filter(Boolean).join('、')||'なし'}。\n`;
+function getPrompt(){let mode=el('ai-mode').value;const prefs=s.prefs.map(p=>`${p.type}: ${p.name}`).join('、');let base=`あなたは個人用の献立生成AIです。材料数量を含むJSONのみを返してください。コードブロックや説明文は付けないでください。\n条件：${s.people}人分。通常の夕食は主菜・副菜・汁物を同系統で揃える。パスタは単品・副菜なし・汁物任意。鍋は主菜と汁物を兼ね副菜任意。カレーは単品・副菜任意、別の主菜と汁物は不要。カレーは週1回、初日に4食分以上まとめて調理し、同じカレーを翌日の夕食にも出す。栄養と日別食費は毎晩食べる1食分だけに配賦する。余りは冷凍用。朝食は設定された食材だけを使用。朝食1人分：${JSON.stringify(breakfastEntries())}。朝の汁物：${s.morningSoup?'必要。前夜から取り分ける':'不要'}。翌日の弁当は、弁当が必要な曜日に限り、前夜の通常献立の主菜・副菜をそれぞれ2食分作って取り分ける。弁当不要の曜日：${(s.noBentoDays||[]).map(i=>daynames[i]+'曜').join('、')||'なし'}。食事記録上の重複計上は禁止。鍋・カレー・パスタの翌日の弁当は別途準備とする。パスタは週${s.pastaCount}回、本人指定のレシピを勝手に作らない。白米に合う主菜を優先。酸味の強い味付けを避ける。長野の季節を考慮。\n登録制限：${prefs}。登録されたアレルギー食材を絶対に使用しない。条件付き食材は条件を厳守する。\n料理の各材料は {name,quantity,unit} を列挙し、unitはg/個/本/パックのいずれか。本人が入力していないパスタの材料は推測せず空配列にする。\n評価で却下済み料理：${s.rejected.map(id=>R[id]?.n).filter(Boolean).join('、')||'なし'}。\n`;
 if(mode==='replace'){let day=+el('ai-day').value,slot=el('ai-slot').value;return base+`\n${daynames[day]}曜日の${slotNames[slot]}「${R[s.week[day][slot]]?.n}」1品だけ、全く別の候補へ差し替えてください。他の料理は変更しないでください。\n次の形のJSONを厳守： {"day":${day},"slot":"${slot}","recipe":{"id":"unique_roman_id","name":"新しい料理名","ingredients":[{"name":"食材名","quantity":100,"unit":"g"}]}}`}
-return base+`\n今週の献立：${JSON.stringify(s.week.map(d=>Object.fromEntries(slots.map(t=>[t,R[d[t]].n]))))}\n新しい7日分の献立を考えてください。評価済みの好きな料理は可能な限り維持。パスタの日は料理IDをpastaとして維持。\n出力形式：{"recipes":[{"id":"new_001","name":"料理名","category":"main","ingredients":[{"name":"食材名","quantity":100,"unit":"g"}]}],"week":[{"main":"new_001","side":"副菜ID","soup":"汁物ID"}, ...合計7日分]}。通常は主菜・副菜・汁物を必須にする。パスタの日はmain="pasta"、sideは指定しない、soupは任意。鍋はcategory="pot"、カレーはcategory="curry"の主菜を使用し、sideは任意、soupは付けない。既存の料理IDは ${JSON.stringify(Object.keys(R))}。新しい料理は必ずrecipesに登録。`}
+return base+`\n今週の献立：${JSON.stringify(s.week.map(d=>Object.fromEntries(slots.map(t=>[t,R[d[t]].n]))))}\n新しい7日分の献立を考えてください。評価済みの好きな料理は可能な限り維持。パスタの日は料理IDをpastaとして維持。\n出力形式：{"recipes":[{"id":"new_001","name":"料理名","category":"main","ingredients":[{"name":"食材名","quantity":100,"unit":"g"}]}],"week":[{"main":"new_001","side":"副菜ID","soup":"汁物ID"}, ...合計7日分]}。通常は主菜・副菜・汁物を必須にする。パスタの日はmain="pasta"、sideは指定しない、soupは任意。鍋はcategory="pot"、カレーはcategory="curry"の主菜を使用し、sideは任意、soupは付けない。カレーは2日連続で同じ料理IDにし、買い物は初日の4食分以上だけ計上する。既存の料理IDは ${JSON.stringify(Object.keys(R))}。新しい料理は必ずrecipesに登録。`}
 function renderAI(){el('ai-selectors').style.display=el('ai-mode').value==='replace'?'block':'none';el('ai-prompt').value=getPrompt()};
 ['ai-mode','ai-day','ai-slot'].forEach(k=>el(k).onchange=renderAI);
 el('copy-prompt').onclick=async()=>{try{await navigator.clipboard.writeText(el('ai-prompt').value);alert('コピーしました。ChatGPTの入力欄へ貼り付けてください。')}catch(e){el('ai-prompt').select();alert('コピーできない環境です。指示欄を選択しましたので手動コピーしてください。')}};
@@ -620,7 +620,15 @@ el('apply-ai').onclick=()=>{
    if(s.ratings[id(day,slot)]===1&&!confirm('「おいしそう」評価済みの料理を変更しますか？'))return;
    const key=recipeFromData(out.recipe,slot);
    s.week[day][slot]=key;
-   if(slot==='main'){s.week[day].optionalSide=false;s.week[day].optionalSoup=false;}
+   if(slot==='main'){
+    s.week[day].optionalSide=false;s.week[day].optionalSoup=false;
+    if(mealKind(key)==='curry'){
+     if(day===6)throw Error('日曜からカレーを始めることはできません。');
+     if(!confirm(daynames[day]+'曜と'+daynames[day+1]+'曜を同じカレーにしますか？'))return;
+     s.week[day+1].main=key;s.week[day+1].optionalSide=false;s.week[day+1].optionalSoup=false;
+     delete s.ratings[id(day+1,'main')];
+    }
+   }
    if(slot==='soup'&&mealKind(s.week[day].main)==='pasta')s.week[day].optionalSoup=true;
    if(slot==='side'&&['pot','curry'].includes(mealKind(s.week[day].main)))s.week[day].optionalSide=true;
    delete s.ratings[id(day,slot)];
@@ -653,6 +661,10 @@ el('apply-ai').onclick=()=>{
     return {main,side,soup,optionalSoup:kind==='pasta'&&d.soup!=null,optionalSide:(kind==='pot'||kind==='curry')&&d.side!=null};
    });
    if(w.filter(d=>d.main==='pasta'||prepared[d.main]?.cat==='pasta').length!==Number(s.pastaCount))throw Error('パスタ回数が設定と違います');
+   const curryDays=w.map((d,i)=>prepared[d.main]?.mealKind==='curry'?i:-1).filter(i=>i>=0);
+   if(curryDays.length!==2||curryDays[1]!==curryDays[0]+1||w[curryDays[0]].main!==w[curryDays[1]].main){
+    throw Error('カレーは同じ料理を2日連続で指定してください（1回調理・2夜）。');
+   }
    for(let i=0;i<7;i++)for(const t of mealRoles(s.week[i])){
     if(s.ratings[id(i,t)]===1&&s.week[i][t]!==w[i][t])throw Error(daynames[i]+'曜日の「おいしそう」評価済み料理は変更できません');
    }
