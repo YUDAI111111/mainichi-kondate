@@ -170,12 +170,13 @@ function chooseMealRecipe(kind,current){
 function mealLabel(kind){return ({normal:'通常',pasta:'パスタ',pot:'鍋',curry:'カレー'})[kind]||kind}
 function renderPlanner(){
  const pasta=s.week.filter(d=>mealKind(d.main)==='pasta').length;
+ const ratingCount=s.week.reduce((sum,d,i)=>sum+mealRoles(d).filter(t=>s.ratings[id(i,t)]===1).length,0);
  const soupCount=s.week.filter(d=>{const kind=mealKind(d.main);return kind==='normal'||kind==='pot'||(kind==='pasta'&&d.optionalSoup)}).length;
  el('stats').innerHTML=
   '<div class="stat"><small>食事人数</small><strong>'+Number(s.people)+'人</strong><small>設定で変更可能</small></div>'+
   '<div class="stat"><small>夕食に汁物を含む日</small><strong>'+soupCount+'日</strong><small>鍋は汁物を兼用</small></div>'+
   '<div class="stat"><small>パスタ</small><strong>'+pasta+'回</strong><small>種類は本人指定</small></div>'+
-  '<div class="stat"><small>「おいしそう」</small><strong>'+Object.values(s.ratings).filter(x=>x===1).length+'品</strong><small>料理だけ保持</small></div>';
+  '<div class="stat"><small>「おいしそう」</small><strong>'+ratingCount+'品</strong><small>料理だけ保持</small></div>';
  el('days').innerHTML=s.week.map((d,i)=>{
   const kind=mealKind(d.main),roles=mealRoles(d);
   const selectors=['normal','pasta','pot','curry'].map(k=>'<button class="btn tiny '+(k===kind?'primary':'')+'" data-kind-day="'+i+'" data-kind="'+k+'">'+mealLabel(k)+'</button>').join('');
