@@ -619,12 +619,14 @@ el('apply-ai').onclick=()=>{
    if(slot==='soup'&&['pot','curry'].includes(mealKind(s.week[day].main)))throw Error('鍋・カレーには独立した汁物を付けません');
    if(s.ratings[id(day,slot)]===1&&!confirm('「おいしそう」評価済みの料理を変更しますか？'))return;
    const key=recipeFromData(out.recipe,slot);
+   if(slot==='main'&&mealKind(key)==='curry'){
+    if(day===6)throw Error('日曜からカレーを始めることはできません。');
+    if(!confirm(daynames[day]+'曜と'+daynames[day+1]+'曜を同じカレーにしますか？'))return;
+   }
    s.week[day][slot]=key;
    if(slot==='main'){
     s.week[day].optionalSide=false;s.week[day].optionalSoup=false;
     if(mealKind(key)==='curry'){
-     if(day===6)throw Error('日曜からカレーを始めることはできません。');
-     if(!confirm(daynames[day]+'曜と'+daynames[day+1]+'曜を同じカレーにしますか？'))return;
      s.week[day+1].main=key;s.week[day+1].optionalSide=false;s.week[day+1].optionalSoup=false;
      delete s.ratings[id(day+1,'main')];
     }
