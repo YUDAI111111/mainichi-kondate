@@ -1,4 +1,4 @@
-// 2026-10-30 利用者提供の料理一覧（80品）。原典URL未提示の品はnull。材料と調理手順は別途登録が必要。
+// 2026-10-30 利用者提供の料理一覧（80品）。原典URL未確認の品はnull。材料と調理手順は別途登録が必要。
 window.KONDATE_CATALOG = [
   {
     "id": "recipe_001",
@@ -9,7 +9,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "鶏のかぶみぞれ煮",
     "adjustment": "酢を除外。骨つき肉をもも肉に変更し、昆布をだし汁に置き換え。1人分に再構成し、ご飯を追加。",
-    "url": ""
+    "url": "https://www.orangepage.net/recipes/304192"
   },
   {
     "id": "recipe_002",
@@ -31,7 +31,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "酒蒸しハンバーグ",
     "adjustment": "酸味を避けるためトマトをきのこへ変更。1人分の計算用重量に調整し、ご飯を追加。",
-    "url": ""
+    "url": "https://www.orangepage.net/food/series-food/akarikihon/181941"
   },
   {
     "id": "recipe_004",
@@ -42,7 +42,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "五宝菜",
     "adjustment": "かまぼこ・うずら卵を、きのこ・鶏卵へ変更。豚肉の部位と調味料を調整。1人分＋ご飯。",
-    "url": ""
+    "url": "https://www.orangepage.net/food/series-food/akarikihon/223773"
   },
   {
     "id": "recipe_005",
@@ -53,7 +53,7 @@ window.KONDATE_CATALOG = [
     "source": "リュウジ／バズレシピ.com",
     "original": "至高の唐揚げ",
     "adjustment": "揚げ焼き用の1人分に調整。うま味調味料を省略。漬け込みは冷蔵庫で行い、レモンは付けない。油は使用予定量、ご飯を追加。",
-    "url": ""
+    "url": "https://www.youtube.com/watch?v=xGKn7TD9jaM"
   },
   {
     "id": "recipe_006",
@@ -86,7 +86,7 @@ window.KONDATE_CATALOG = [
     "source": "大島菊枝／オレンジページ",
     "original": "牛肉とレタスのすき焼き風",
     "adjustment": "牛肉を扱いやすい薄切り肉へ変更。1人分の分量に調整し、ご飯を追加。",
-    "url": ""
+    "url": "https://www.orangepage.net/recipes/305723"
   },
   {
     "id": "recipe_009",
@@ -108,7 +108,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "具だくさん豚汁",
     "adjustment": "豚バラをこま肉へ変更し、汁物1人分の重量・調味料に調整。",
-    "url": ""
+    "url": "https://www.orangepage.net/food/series-food/akarikihon/192855"
   },
   {
     "id": "recipe_011",
@@ -119,7 +119,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "ほうれん草の豆乳スープ",
     "adjustment": "汁物1人分の具材と調味料へ調整。少々の油・塩を計算用重量に数値化。",
-    "url": ""
+    "url": "https://www.orangepage.net/food/series-food/akari-dinnerroadmap/218976"
   },
   {
     "id": "recipe_012",
@@ -130,7 +130,7 @@ window.KONDATE_CATALOG = [
     "source": "樋口秀子／オレンジページ",
     "original": "えのきと豆腐のみぞれ汁",
     "adjustment": "1袋・1丁などを計算用の可食重量に換算し、1人分の量へ調整。",
-    "url": ""
+    "url": "https://www.orangepage.net/recipes/301324"
   },
   {
     "id": "recipe_013",
@@ -141,7 +141,7 @@ window.KONDATE_CATALOG = [
     "source": "長谷川あかり／オレンジページ",
     "original": "白いミネストローネ",
     "adjustment": "酸味を避けて白菜漬けを生の白菜へ変更。ローリエを省略し、1人分の可食重量と塩へ調整。",
-    "url": ""
+    "url": "https://www.orangepage.net/food/series-food/hasegawaakari/18644"
   },
   {
     "id": "recipe_014",
@@ -152,7 +152,7 @@ window.KONDATE_CATALOG = [
     "source": "脇雅世／オレンジページ",
     "original": "基本のミネストローネ",
     "adjustment": "トマトの量を控えめに調整。豆をゆでいんげん豆へ置き換え、ローリエを省略。1人分の登録量です。",
-    "url": ""
+    "url": "https://www.orangepage.net/recipes/305206"
   },
   {
     "id": "recipe_015",
@@ -163,7 +163,7 @@ window.KONDATE_CATALOG = [
     "source": "大庭英子／オレンジページ",
     "original": "白菜とベーコンのスープ",
     "adjustment": "枚・少々の材料を計算用可食重量に数値化し、1人分に調整。",
-    "url": ""
+    "url": "https://www.orangepage.net/recipes/104529"
   },
   {
     "id": "recipe_016",
