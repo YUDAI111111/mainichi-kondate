@@ -18,7 +18,7 @@
 <body>
 <div class="app"><aside class="sidebar"><div class="brand"><div class="brandmark">食</div>まいにち献立</div><button class="nav active" data-view="planner">▦　週間献立</button><button class="nav" data-view="shopping">▣　買い物リスト</button><button class="nav" data-view="ai">✦　ChatGPT連携</button><button class="nav" data-view="nutrition">◷　栄養チェック</button><button class="nav" data-view="recipes">☷　レシピ一覧</button><button class="nav" data-view="settings">⚙　設定・好き嫌い</button><div class="hint"><b>GitHub Pages版</b><br>設定・評価はブラウザ内に保存します。現段階の再生成は候補料理からの入れ替えであり、GPTの呼び出しではありません。</div></aside>
 <main class="main"><div class="mobile-nav"><button class="nav active" data-view="planner">週間献立</button><button class="nav" data-view="shopping">買い物</button><button class="nav" data-view="ai">GPT連携</button><button class="nav" data-view="nutrition">栄養</button><button class="nav" data-view="recipes">レシピ</button><button class="nav" data-view="settings">設定</button></div>
-<div id="planner" class="view active"><div class="top"><div><div class="eyebrow">WEEKLY MEAL PLANNER</div><h1>今週の献立</h1><p>気に入らない料理だけ差し替え。残したい料理はそのままに。</p></div><div class="toolbar"><span class="pill">試作版 / データは端末内</span><button class="btn" id="export">設定・献立を保存</button></div></div><div class="stats" id="stats"></div><div class="notice">「まずそう」を選ぶと、その料理だけ候補から差し替えます。「おいしそう」と未評価の料理は変更しません。<b>現在は固定の候補料理から選ぶ試作動作</b>で、GPTによる新規生成ではありません。</div><section class="section"><div class="sectionhead"><div><h2>1週間の食事</h2><p>夕食は主菜・副菜・汁物。パスタはレシピを本人指定する前提です。</p></div><div class="toolbar"><button class="btn tiny" id="reset-ratings">評価だけリセット</button><button class="btn tiny" onclick="window.print()">印刷</button></div></div><div id="days" class="days"></div></section><section class="section two"><div class="panel"><h2>献立のルール</h2><p class="small muted">白米に合うおかずを優先し、夕食の残りを翌日の弁当に回します。冬は鍋を多くしてもよい設定です。</p><div id="rule-summary"></div></div><div class="panel"><h2>調理と保存の注意</h2><p class="small muted">翌日用は食後の残りではなく、調理時に清潔な容器へ取り分けて速やかに冷蔵します。弁当は十分な加熱・冷却・保冷を前提にしてください。</p><p class="small muted">パスタのレシピ・材料をまだ登録していないため、該当日の買い物量は未完成です。</p></div></section></div>
+<div id="planner" class="view active"><div class="top"><div><div class="eyebrow">WEEKLY MEAL PLANNER</div><h1>今週の献立</h1><p>気に入らない料理だけ差し替え。残したい料理はそのままに。</p></div><div class="toolbar"><span class="pill">試作版 / データは端末内</span><button class="btn" id="export">設定・献立を保存</button></div></div><div class="stats" id="stats"></div><div class="notice">「まずそう」を選ぶと、その料理だけ候補から差し替えます。「おいしそう」と未評価の料理は変更しません。<b>現在は固定の候補料理から選ぶ試作動作</b>で、GPTによる新規生成ではありません。</div><section class="section"><div class="sectionhead"><div><h2>1週間の食事</h2><p>夕食は主菜・副菜・汁物。パスタはレシピを本人指定する前提です。</p></div><div class="toolbar"><button class="btn tiny" id="reset-ratings">評価だけリセット</button><button class="btn tiny primary" id="reset-menu">献立リセット</button><button class="btn tiny" onclick="window.print()">印刷</button></div></div><div id="days" class="days"></div></section><section class="section two"><div class="panel"><h2>献立のルール</h2><p class="small muted">白米に合うおかずを優先し、夕食の残りを翌日の弁当に回します。冬は鍋を多くしてもよい設定です。</p><div id="rule-summary"></div></div><div class="panel"><h2>調理と保存の注意</h2><p class="small muted">翌日用は食後の残りではなく、調理時に清潔な容器へ取り分けて速やかに冷蔵します。弁当は十分な加熱・冷却・保冷を前提にしてください。</p><p class="small muted">パスタのレシピ・材料をまだ登録していないため、該当日の買い物量は未完成です。</p></div></section></div>
 <div id="ai" class="view"><div class="top"><div><div class="eyebrow">PLUS HANDOFF</div><h1>ChatGPT連携</h1><p>追加のAPI契約なしで、ChatGPTとのコピー＆貼り付けでAI献立を利用します。</p></div></div><div class="warning" style="margin-bottom:20px">これは<b>自動API呼び出しではありません</b>。下の指示をChatGPTに貼り、返ってきたJSONをここに貼り付けます。自動生成ボタンではありません。</div><div class="two"><div class="panel"><h2>① AIへの指示を作る</h2><div class="field"><label for="ai-mode">何を生成するか</label><select id="ai-mode"><option value="replace">指定した料理1品のみ差し替える</option><option value="week">新しい1週間の献立を作る</option></select></div><div class="field" id="ai-selectors"><label>差し替え対象</label><select id="ai-day">${['月','火','水','木','金','土','日'].map((x,i)=>`<option value="${i}">${x}曜日</option>`).join('')}</select> <select id="ai-slot"><option value="main">主菜</option><option value="side">副菜</option><option value="soup">汁物</option></select></div><label for="ai-prompt">生成した指示</label><textarea id="ai-prompt" rows="12" readonly style="width:100%;resize:vertical;border-radius:10px;padding:12px;border:1px solid #d7e2d8"></textarea><div class="toolbar" style="margin-top:12px"><button class="btn primary" id="copy-prompt">指示をコピー</button><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none">ChatGPTを開く ↗</a></div></div><div class="panel"><h2>② AIの返答を反映する</h2><p class="small muted">ChatGPTが返したJSONだけを下に貼ってください。AIが返したテキストを無検証で信用せず、登録前に基本形式と禁止食材を簡易チェックします。</p><label for="ai-json">JSONを貼り付け</label><textarea id="ai-json" rows="16" placeholder='{"day":0,"slot":"main","recipe":{"id":"new_001","name":"料理名","ingredients":[{"name":"豚肉","quantity":130,"unit":"g"}]}}' style="width:100%;resize:vertical;border-radius:10px;padding:12px;border:1px solid #d7e2d8"></textarea><div class="toolbar" style="margin-top:12px"><button class="btn primary" id="apply-ai">内容を確認して反映</button></div><p class="small muted">すでに「おいしそう」と評価した料理は、個別差し替え以外では自動変更しません。新しい1週間の読み込みは別途確認します。</p></div></div></div>
 <div id="shopping" class="view"><div class="top"><div><div class="eyebrow">SMART SHOPPING</div><h1>買い物リスト</h1><p>料理ごとの材料を合算し、登録した在庫を差し引きます。</p></div><div class="toolbar"><button class="btn" id="copy-shopping">コピー</button><button class="btn" onclick="window.print()">印刷</button></div></div><div class="warning" style="margin-bottom:19px">この一覧は試作用の料理データから計算します。パスタ2回分の材料と月曜日の弁当の材料は未登録です。実際の購入前に確認してください。</div><div id="catalog-missing"></div><div class="two"><div class="panel"><h2>必要な食材</h2><div class="scroll"><table class="tbl"><thead><tr><th>購入</th><th>食材</th><th>必要量</th></tr></thead><tbody id="shoppingbody"></tbody></table></div></div><div class="panel"><h2>手元の在庫</h2><p class="small muted">食材名と数量を同じ単位で入力してください。</p><div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px"><input id="stock-name" placeholder="食材名（例：米）" style="flex:1"><input id="stock-quantity" type="number" min="0" placeholder="数量" style="width:95px"><select id="stock-unit"><option>g</option><option>個</option><option>本</option><option>パック</option></select><button id="addstock" class="btn primary">追加</button></div><div id="stocks"></div></div></div></div>
 <div id="nutrition" class="view"><div class="top"><div><div class="eyebrow">NUTRITION INSIGHT</div><h1>栄養バランス</h1><p>最終献立が決まってから、ビタミン・ミネラルまで確認します。</p></div></div><div class="warning" style="margin-bottom:20px"><b>栄養素の数値はまだ算出していません。</b> 日本食品標準成分表との紐付け、食品重量、調理損失、栄養摂取基準が必要です。データがないのにビタミン値を推測して表示することはしません。</div><div class="panel"><h2>分析予定の栄養素</h2><p class="small muted">初期版では「未計算」を明示します。公式食品成分データを連携してから自動計算に切り替える設計です。</p><div class="nutrients" id="nutrients"></div></div><section class="section"><div class="panel"><h2>栄養確認前の未確定事項</h2><div id="nutrition-gaps"></div></div></section></div>
@@ -100,7 +100,57 @@ function renderNutrition(){el('nutrients').innerHTML=nutrients.map(n=>`<div clas
 function renderSettings(){el('people').value=s.people;el('morning-soup').value=s.morningSoup?'yes':'no';el('pasta-count').value=s.pastaCount;el('budget').value=s.budget;const types={dislike:'苦手',allergy:'アレルギー',like:'好き',condition:'条件付き'};el('prefs').innerHTML=s.prefs.map((p,i)=>`<div class="tag"><span>${esc(types[p.type])}：${esc(p.name)}</span><button title="編集" data-edit="${i}">✎</button><button title="削除" data-delete="${i}">×</button></div>`).join('');document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{s.prefs.splice(+b.dataset.delete,1);save();renderSettings()});document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{let p=s.prefs[+b.dataset.edit],next=prompt('食材・料理・条件を編集',p.name);if(next&&next.trim()){p.name=next.trim();save();renderSettings()}})};
 el('addpref').onclick=()=>{let name=el('pref-input').value.trim(),type=el('pref-type').value;if(!name)return; s.prefs.push({name,type});el('pref-input').value='';save();renderSettings()};
 el('savesettings').onclick=()=>{let people=Math.floor(+el('people').value);if(!Number.isFinite(people)||people<1||people>20)return alert('人数は1〜20人で入力してください。');s.people=people;s.morningSoup=el('morning-soup').value==='yes';s.pastaCount=+el('pasta-count').value;s.budget=el('budget').value;let curr=s.week.filter(x=>x.main==='pasta').length;if(curr!==s.pastaCount){if(s.pastaCount===1){let i=s.week.findLastIndex(x=>x.main==='pasta');s.week[i].main='garlicchicken'}else{let i=5;s.week[i].main='pasta'}s.ratings={}}save();renderPlanner();alert('設定を保存しました。')};
-el('reset-ratings').onclick=()=>{if(confirm('「おいしそう」の評価記録をリセットしますか？献立そのものは維持します。')){s.ratings={};save();renderPlanner()}};
+
+function newWeekForReset(){
+ const previous=s.week.map(d=>({...d}));
+ const usedMain=new Set(), usedSide=new Set(), usedSoup=new Set();
+ const prefs=s.prefs.filter(p=>p.type==='allergy'||p.type==='dislike');
+ const forbidden=prefs.map(p=>p.name.trim()).filter(Boolean);
+ const aliases={ 'ウリ科':['きゅうり','かぼちゃ','ズッキーニ','ゴーヤ','冬瓜','メロン','スイカ'],'貝類':['あさり','しじみ','はまぐり','ホタテ','牡蠣','ムール貝','貝'],'海老':['えび','エビ','海老'],'カニ':['かに','カニ','蟹'],'イカ':['いか','イカ','烏賊'],'タコ':['たこ','タコ','蛸']};
+ function safe(k){
+   const r=R[k];if(!r||!Array.isArray(r.ings)||!r.ings.length)return false;
+   const words=[r.n,...r.ings.map(x=>x[0])].join(' ');
+   return !forbidden.some(f=>(aliases[f]||[f]).some(word=>words.includes(word)));
+ }
+ function choose(slot,avoid,used,preferCat){
+   let list=Object.keys(R).filter(k=>R[k].cat===slot&&k!=='pasta'&&safe(k)&&!used.has(k));
+   if(preferCat){const matching=list.filter(k=>R[k].cuisine===preferCat);if(matching.length)list=matching}
+   const notSame=list.filter(k=>k!==avoid);
+   if(notSame.length)list=notSame;
+   if(!list.length)throw Error(slot+' の安全に確認できる候補が足りません');
+   const chosen=list[Math.floor(Math.random()*list.length)];used.add(chosen);return chosen;
+ }
+ const pastaCount=Math.min(2,Math.max(1,Number(s.pastaCount)||1));
+ const pastaDays=pastaCount===2?[2,5]:[2];
+ const next=[];
+ for(let i=0;i<7;i++){
+   if(pastaDays.includes(i)){
+      // パスタは種類・材料とも本人の入力が必要なため自動変更しない。
+      next.push({main:'pasta',side:previous[i]?.side||'komatsu',soup:previous[i]?.soup||'wakamesoup'});
+      continue;
+   }
+   const main=choose('main',previous[i]?.main,usedMain);
+   const side=choose('side',previous[i]?.side,usedSide);
+   const soup=choose('soup',previous[i]?.soup,usedSoup);
+   next.push({main,side,soup});
+ }
+ // 万一選択が元の献立と同じなら並びをずらす（選択候補がある場合）。
+ if(next.every((d,i)=>d.main===previous[i]?.main&&d.side===previous[i]?.side&&d.soup===previous[i]?.soup)){
+   const nonPasta=next.map((d,i)=>i).filter(i=>d.main!=='pasta');
+   if(nonPasta.length>1){const a=nonPasta[0],b=nonPasta[1];const t=next[a];next[a]=next[b];next[b]=t}
+ }
+ return next;
+}
+el('reset-menu').onclick=()=>{
+ if(!confirm('1週間の献立をすべて作り直します。料理の評価もリセットします。設定・食材の好み・在庫は残します。続けますか？'))return;
+ let next;
+ try{next=newWeekForReset()}catch(e){alert('献立を作り直せませんでした：'+e.message+'。材料未確認の料理は選びません。');return}
+ s.week=next;s.ratings={};s.likes=[];s.rejected=[];s.history=[];s.checked={};
+ save();renderPlanner();
+ alert('1週間の献立を作り直しました。料理の評価もリセットしました。');
+};
+
+el('reset-ratings').onclick=()=>{if(confirm('「おいしそう」の評価記録をリセットしますか？献立そのものは維持します。')){s.ratings={};s.likes=[];s.rejected=[];save();renderPlanner()}};
 el('export').onclick=()=>{let blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kondate-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 el('importbtn').onclick=()=>el('importfile').click();el('importfile').onchange=async e=>{let file=e.target.files?.[0];if(!file)return;try{let d=JSON.parse(await file.text());if(!Array.isArray(d.week)||d.week.length!==7||!Array.isArray(d.prefs))throw Error('format');s=Object.assign(copy(initial),d);save();renderPlanner();renderSettings();alert('読み込みました')}catch(ex){alert('保存データの形式を確認できませんでした。')}};
 el('resetall').onclick=()=>{if(confirm('全ての設定・評価・在庫を消去し初期状態に戻しますか？')){s=copy(initial);save();renderPlanner();renderSettings()}};
