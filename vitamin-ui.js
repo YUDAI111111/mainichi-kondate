@@ -20,7 +20,7 @@
  function deficitList(data){
   return catalog.filter(([key])=>{
    const target=targetFor(key);
-   return target!=null&&Number(data.micro?.[key]||0)<target;
+   return target!=null&&Number(data.microCovered?.[key]||0)>0&&Number(data.micro?.[key]||0)<target;
   }).sort((a,b)=>Number(data.micro?.[a[0]]||0)/targetFor(a[0])-Number(data.micro?.[b[0]]||0)/targetFor(b[0]));
  }
 
@@ -149,10 +149,39 @@
    if(sel){sel.value=b.dataset.microViewDay;s.microSelectedDay=sel.value;save();renderMicro();}
   });
  }
+
+ function renderPlannerGaps(){
+  const fresh=!!s.analysis?.daily?.[0]?.micro&&!aIsStale();
+  document.querySelectorAll('[data-micro-gap-day]').forEach(node=>{
+   const index=Number(node.dataset.microGapDay);
+   node.classList.toggle('gap-pending',!fresh);
+   if(!fresh){
+    node.innerHTML='<span class="gap-label">栄養チェック</span>'+
+     '<span class="gap-muted">'+(s.analysis?'献立や設定が変更されています。栄養計算ボタンで更新してください。':'未計算です。上の「栄養計算」ボタンで確認できます。')+'</span>';
+    return;
+   }
+   const day=s.analysis.daily[index],shortfalls=deficitList(day);
+   if(!shortfalls.length){
+    node.innerHTML='<span class="gap-label">不足候補</span><span class="gap-muted">算出済みの範囲では基準未達の候補なし</span>';
+    return;
+   }
+   const incomplete=shortfalls.some(([key])=>(day.microMissing?.[key]||[]).length>0);
+   const chips=shortfalls.map(([key,name])=>'<span class="gap-tag">'+esc(name)+'</span>').join('');
+   node.innerHTML='<span class="gap-label">不足候補</span><div class="gap-items">'+chips+'</div>'+
+    (incomplete?'<span class="gap-note">未算出の料理・食材あり。実際の不足は未確定。</span>':'');
+  });
+ }
+ const beforePlannerGaps=renderPlanner;
+ renderPlanner=function(){
+  beforePlannerGaps();
+  renderPlannerGaps();
+ };
+
  const previousNutrition=renderNutrition;
  renderNutrition=function(){
   previousNutrition();
   renderMicro();
+  renderPlannerGaps();
   const info=el('nutrition-gaps');
   if(info)info.innerHTML='<p>出典：文部科学省「日本食品標準成分表2020年版（八訂）」に基づく食品別成分値。2023年増補・2026年正誤表の更新は未照合です。レシピの使用材料と公表食品との対応が一致しない場合や未登録の場合は参考値にとどまります。</p>'+
    '<p><a target="_blank" rel="noopener noreferrer" href="https://www.mext.go.jp/a_menu/syokuhinseibun/mext_01110.html">文部科学省：成分表2020年版（八訂）</a> ／ <a target="_blank" rel="noopener noreferrer" href="https://github.com/katoharu432/standards-tables-of-food-composition-in-japan">オープンデータ変換元（CC BY 4.0）</a></p>'+
@@ -171,7 +200,7 @@
  if(el('micro-target-profile')){
   el('micro-target-profile').value=s.microTargetProfile||'male1829';
   el('micro-target-profile').onchange=()=>{
-   s.microTargetProfile=referenceProfile();save();renderMicro();
+   s.microTargetProfile=referenceProfile();save();renderMicro();renderPlannerGaps();
   };
  }
  renderNutrition();
