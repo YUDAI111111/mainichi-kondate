@@ -87,16 +87,17 @@ for(const item of KONDATE_CATALOG){
    R[item.appId].steps=steps;
    R[item.appId].sourceType=item.original?'参考レシピをアプリ用に調整':'家庭料理の登録例';
  }
+ R[item.appId].cuisine=item.cuisine;R[item.appId].mealKind=item.category;
  if(["pot","curry"].includes(item.category))R[item.appId].isOneDish=true;
 }
 const initial={people:1,morningSoup:true,pastaCount:2,budget:'',breakfast:{nattoPacks:1,eggs:1,riceEnabled:true,riceGrams:300,sausageEnabled:false,oilGrams:3,extras:''},week:[
 {main:'shogayaki',side:'komatsu',soup:'wakamesoup'},
 {main:'teriyaki',side:'kinpira',soup:'daikon'},
-{main:'pasta',side:'spinach',soup:'mushroom'},
+{main:'pasta',side:'spinach',soup:'mushroom',optionalSoup:false},
 {main:'hamburg',side:'carrot',soup:'potato'},
-{main:'miso_pork',side:'bean',soup:'wakamesoup'},
-{main:'pasta',side:'atsu',soup:'cabbage'},
-{main:'katsu',side:'shiraae',soup:'daikon'}],prefs:[],likes:[],rejected:[],ratings:{},stock:[],checked:{},counts:{},history:[]};
+{main:'catalog_recipe_041',side:'bean',soup:'wakamesoup',optionalSide:false},
+{main:'pasta',side:'atsu',soup:'cabbage',optionalSoup:false},
+{main:'catalog_recipe_038',side:'shiraae',soup:'daikon',optionalSide:true}],prefs:[],likes:[],rejected:[],ratings:{},stock:[],checked:{},counts:{},history:[]};
 function copy(o){return JSON.parse(JSON.stringify(o))};
 let s;try{let r=JSON.parse(localStorage.getItem('kondate_10'));s=Object.assign(copy(initial),r||{});if(!Array.isArray(s.week)||s.week.length!==7)throw Error('bad');s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{})}catch(e){s=copy(initial)}
 const daynames=['月','火','水','木','金','土','日']; const slots=['main','side','soup'];const slotNames={main:'主菜',side:'副菜',soup:'汁物'};
@@ -137,15 +138,95 @@ function recipeLinkFromPlan(recipeKey,day,slot){
  if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く ↗</a>'}
  return '<button class="btn tiny" style="margin-top:7px;width:100%" data-detail="'+day+'-'+slot+'">材料・作り方を見る</button>';
 }
-function renderPlanner(){const pasta=s.week.filter(x=>x.main==='pasta').length;el('stats').innerHTML=`<div class="stat"><small>食事人数</small><strong>${s.people}人</strong><small>設定で変更可能</small></div><div class="stat"><small>夕食の汁物</small><strong>7日</strong><small>毎晩必須</small></div><div class="stat"><small>パスタ</small><strong>${pasta}回</strong><small>料理内容は本人が指定</small></div><div class="stat"><small>評価済み</small><strong>${Object.values(s.ratings).filter(x=>x===1).length}品</strong><small>「おいしそう」で保持</small></div>`;
-el('days').innerHTML=s.week.map((d,i)=>`<div class="day"><div class="daytitle"><strong>${daynames[i]}曜日</strong><small>${i+1}日目</small></div><div class="mealblock"><div class="meallabel">朝食</div><div class="mealname">${esc(breakfastLabel())}</div></div><div class="mealblock"><div class="meallabel">弁当</div><div class="mealname">${esc(mealLunch(i))}</div></div><div class="mealblock"><div class="meallabel">夕食</div>${(R[d.main]?.isOneDish?["main"]:slots).map(t=>`<div class="dinneritem"><div class="dishcat">${slotNames[t]}</div><div class="dishname">${esc(R[d[t]].n)}</div>${rating(i,t)}${recipeLinkFromPlan(d[t],i,t)}</div>`).join('')}</div></div>`).join('');
-el('rule-summary').innerHTML=`<span class="metric">${s.people}人分</span> <span class="metric">朝味噌汁：${s.morningSoup?'あり':'なし'}</span> <span class="metric">パスタ${s.pastaCount}回希望</span><p class="small muted">嫌い・制限食材は現在${s.prefs.length}件登録されています。</p>`;
-document.querySelectorAll('[data-rating]').forEach(b=>b.onclick=()=>{let i=+b.dataset.day,t=b.dataset.slot,v=+b.dataset.rating;if(v===1){s.ratings[id(i,t)]=1;s.likes.push(s.week[i][t]);}else{rejectAndReplace(i,t)}save();renderPlanner()});document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>{
- const [i,t]=b.dataset.detail.split('-'),rec=R[s.week[+i][t]];
- const match=KONDATE_CATALOG.find(item=>item.appId===s.week[+i][t]);
- if(match){catalogDetail(match.id);return;}
- modal(rec.n,rec.ings.length?`<div class="ingredientlist">${rec.ings.map(x=>`<span class="ingredient">${esc(x[0])} ${x[1]*s.people}${x[2]}</span>`).join('')}</div>`:'<p class="warning">パスタの種類・材料は未登録です。ご自身のレシピを入力してください。</p>');
-})};
+
+function mealKind(recipeId){
+ if(recipeId==='pasta'||R[recipeId]?.cat==='pasta')return 'pasta';
+ const item=KONDATE_CATALOG.find(x=>x.appId===recipeId);
+ if(item?.category==='pot'||item?.category==='curry')return item.category;
+ if(R[recipeId]?.mealKind==='pot'||R[recipeId]?.mealKind==='curry')return R[recipeId].mealKind;
+ return 'normal';
+}
+function mealRoles(d){
+ const kind=mealKind(d.main);
+ if(kind==='pasta')return d.optionalSoup?['main','soup']:['main'];
+ if(kind==='pot'||kind==='curry')return d.optionalSide?['main','side']:['main'];
+ return ['main','side','soup'];
+}
+function recipeAuthor(k){
+ const item=KONDATE_CATALOG.find(x=>x.appId===k);
+ if(!item?.original||!item.source)return '';
+ return item.source.split('／')[0].trim();
+}
+function mealGroup(k){return R[k]?.cuisine||KONDATE_CATALOG.find(x=>x.appId===k)?.cuisine||'';}
+function chooseMealRecipe(kind,current){
+ const items=KONDATE_CATALOG.filter(x=>
+  (kind==='normal'?x.category==='main':x.category===kind) &&
+  x.appId!==current && R[x.appId]?.ings?.length
+ );
+ if(kind==='pasta')return 'pasta';
+ if(!items.length)throw Error('候補がありません');
+ return items[Math.floor(Math.random()*items.length)].appId;
+}
+function mealLabel(kind){return ({normal:'通常',pasta:'パスタ',pot:'鍋',curry:'カレー'})[kind]||kind}
+function renderPlanner(){
+ const pasta=s.week.filter(d=>mealKind(d.main)==='pasta').length;
+ const soupCount=s.week.filter(d=>{const kind=mealKind(d.main);return kind==='normal'||kind==='pot'||(kind==='pasta'&&d.optionalSoup)}).length;
+ el('stats').innerHTML=
+  '<div class="stat"><small>食事人数</small><strong>'+Number(s.people)+'人</strong><small>設定で変更可能</small></div>'+
+  '<div class="stat"><small>夕食に汁物を含む日</small><strong>'+soupCount+'日</strong><small>鍋は汁物を兼用</small></div>'+
+  '<div class="stat"><small>パスタ</small><strong>'+pasta+'回</strong><small>種類は本人指定</small></div>'+
+  '<div class="stat"><small>「おいしそう」</small><strong>'+Object.values(s.ratings).filter(x=>x===1).length+'品</strong><small>料理だけ保持</small></div>';
+ el('days').innerHTML=s.week.map((d,i)=>{
+  const kind=mealKind(d.main),roles=mealRoles(d);
+  const selectors=['normal','pasta','pot','curry'].map(k=>'<button class="btn tiny '+(k===kind?'primary':'')+'" data-kind-day="'+i+'" data-kind="'+k+'">'+mealLabel(k)+'</button>').join('');
+  const cards=roles.map(t=>{
+   const key=d[t],rec=R[key],author=recipeAuthor(key);
+   return '<div class="dinneritem"><div class="dishcat">'+(t==='main'&&kind==='pot'?'鍋（主菜・汁物）':t==='main'&&kind==='curry'?'カレー':t==='main'&&kind==='pasta'?'パスタ':slotNames[t])+'</div>'+
+    '<div class="dishname">'+esc(rec?.n||'料理未登録')+'</div>'+
+    (author?'<div class="small muted">参考：'+esc(author)+'</div>':'')+
+    rating(i,t)+recipeLinkFromPlan(key,i,t)+'</div>';
+  }).join('');
+  let optional='';
+  if(kind==='pasta')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="soup">'+(d.optionalSoup?'汁物を外す':'汁物を追加（任意）')+'</button>';
+  if(kind==='pot'||kind==='curry')optional='<button class="btn tiny" data-optional-day="'+i+'" data-optional-slot="side">'+(d.optionalSide?'副菜を外す':'副菜を追加（任意）')+'</button>';
+  return '<div class="day"><div class="daytitle"><strong>'+daynames[i]+'曜日</strong><small>'+(i+1)+'日目</small></div>'+
+   '<div class="mealblock"><div class="meallabel">朝食</div><div class="mealname">'+esc(breakfastLabel())+'</div></div>'+
+   '<div class="mealblock"><div class="meallabel">弁当</div><div class="mealname">'+esc(mealLunch(i))+'</div></div>'+
+   '<div class="mealblock"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
+   '<div class="toolbar" style="gap:4px;margin:7px 0;flex-wrap:wrap">'+selectors+'</div>'+cards+optional+'</div></div>';
+ }).join('');
+ el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
+  '<p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
+ document.querySelectorAll('[data-rating]').forEach(btn=>btn.onclick=()=>{
+  const day=+btn.dataset.day,slot=btn.dataset.slot,v=+btn.dataset.rating;
+  if(v===1){s.ratings[id(day,slot)]=1;s.likes.push(s.week[day][slot]);}
+  else rejectAndReplace(day,slot);
+  save();renderPlanner();
+ });
+ document.querySelectorAll('[data-detail]').forEach(btn=>btn.onclick=()=>{
+  const [day,slot]=btn.dataset.detail.split('-'),k=s.week[+day][slot],rec=R[k],match=KONDATE_CATALOG.find(x=>x.appId===k);
+  if(match){catalogDetail(match.id);return;}
+  modal(rec.n,rec.ings?.length?'<div class="ingredientlist">'+rec.ings.map(x=>'<span class="ingredient">'+esc(x[0])+' '+x[1]*s.people+esc(x[2])+'</span>').join('')+'</div>':'<p class="warning">ご本人指定のパスタレシピは未登録です。</p>');
+ });
+ document.querySelectorAll('[data-kind-day]').forEach(btn=>btn.onclick=()=>{
+  const day=+btn.dataset.kindDay,kind=btn.dataset.kind,current=s.week[day],old=mealKind(current.main);
+  if(old===kind)return;
+  if(kind==='pasta'&&s.week.filter((d,i)=>i!==day&&mealKind(d.main)==='pasta').length>=Number(s.pastaCount)){alert('パスタは週'+s.pastaCount+'回の設定です。先に別のパスタの日を変更してください。');return;}
+  try{current.main=chooseMealRecipe(kind,current.main)}catch(ex){alert(ex.message);return}
+  current.optionalSide=false;current.optionalSoup=false;
+  delete s.ratings[id(day,'main')];
+  save();renderPlanner();
+ });
+ document.querySelectorAll('[data-optional-day]').forEach(btn=>btn.onclick=()=>{
+  const day=+btn.dataset.optionalDay,slot=btn.dataset.optionalSlot,d=s.week[day];
+  if(slot==='soup'){d.optionalSoup=!d.optionalSoup;if(d.optionalSoup&&!R[d.soup])d.soup='wakamesoup';}
+  else {d.optionalSide=!d.optionalSide;if(d.optionalSide&&!R[d.side])d.side='komatsu';}
+  if(!d.optionalSoup)delete s.ratings[id(day,'soup')];
+  if(!d.optionalSide)delete s.ratings[id(day,'side')];
+  save();renderPlanner();
+ });
+}
+
 function rejectAndReplace(i,t){let old=s.week[i][t];s.rejected.push(old);let candidates=Object.keys(R).filter(k=>R[k].cat===t&&!s.rejected.includes(k)&&!s.week.some((d,j)=>j!==i&&d[t]===k));if(t==='main' && old==='pasta')candidates=[];if(!candidates.length){s.ratings[id(i,t)]=-1;modal('候補がありません','<p>この分類の代替料理候補がありません。料理データを増やす必要があります。変更前の料理は残しています。</p>');return;}let next=candidates[0];s.week[i][t]=next;s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});delete s.ratings[id(i,t)];}
 function shoppingData(){let agg={};let add=(r,mul=1)=>{if(!r)return;for(let [name,q,u]of r.ings){let key=name+'|'+u; if(!agg[key])agg[key]={name,u,q:0};agg[key].q+=q*mul}};
 for(let i=0;i<7;i++){let d=s.week[i];add(R[d.main],s.people*(d.main==='pasta'?1: i===6?1:2));if(!R[d.main]?.isOneDish){add(R[d.side],s.people);add(R[d.soup],s.people*(s.morningSoup?2:1));} if(d.main!=="pasta")add({ings:[["ご飯（炊飯後）",160,"g"]]},s.people*(i===6?1:2)); // dinner + next breakfast
