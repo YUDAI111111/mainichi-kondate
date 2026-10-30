@@ -83,11 +83,14 @@ renderShopping=function(){
  const alerts=[];
  if(missing.length)alerts.push('<strong>材料未登録：</strong>'+missing.map(esc).join('、'));
  if(lunchGaps.length)alerts.push('<strong>弁当材料の追加登録が必要：</strong>'+lunchGaps.map(esc).join('、'));
- if(s.morningSoup)for(let i=0;i<7;i++){
-  const prev=s.week[(i+6)%7],kind=mealKind(prev.main);
+ if(s.morningSoup){
+ alerts.push('<strong>月曜朝の汁物：</strong>前週の日曜献立は未登録です');
+ for(let i=1;i<7;i++){
+  const prev=s.week[i-1],kind=mealKind(prev.main);
   if(kind==='curry'||kind==='pasta'&&!prev.optionalSoup) {
    alerts.push('<strong>朝の汁物を別途準備：</strong>'+daynames[i]+'曜日');
   }
+ }
  }
  el("catalog-missing").innerHTML=alerts.length
  ?'<div class="warning" style="margin-bottom:16px">'+alerts.map(x=>'<p>'+x+'</p>').join('')+'</div>':"";
