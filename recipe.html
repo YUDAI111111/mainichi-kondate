@@ -27,7 +27,7 @@ titlebox.append(make('div',recipe.cuisine+' · '+recipe.style,'meta'),make('h1',
 titlebox.append(make('p',recipe.original?'参考：'+recipe.source+'（掲載料理：'+recipe.original+'）':'家庭料理の登録例','meta'));
 if(recipe.adjustment){titlebox.append(make('p','アプリ向けの変更：'+recipe.adjustment,'notice'))}
 if(recipe.url&&/^https:\/\//.test(recipe.url)){
- const a=make('a','参考元のレシピを別タブで開く ↗','source');a.href=recipe.url;a.target='_blank';a.rel='noopener noreferrer';titlebox.append(a);
+ const a=make('a','参考元のレシピを別タブで開く','source');a.href=recipe.url;a.target='_blank';a.rel='noopener noreferrer';titlebox.append(a);
 }else if(recipe.original){titlebox.append(make('p','参考元の直接URLは確認できていません。','meta'))}
 root.append(titlebox);
 const ingredientsSection=make('section',undefined,'panel'),heading=make('h2','材料');
