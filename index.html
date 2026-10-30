@@ -132,7 +132,7 @@ function breakfastLabel(){
  if(s.morningSoup)result.push('汁物（前夜分または別調理）');
  return result.join('・')||'朝食未設定';
 }
-function mealLunch(i){let p=s.week[i-1];if(!p)return '弁当（週初めの献立要登録）';if(p.main==='pasta')return '弁当（前夜がパスタのため別途準備）';return R[p.main].n+'（前夜に取り分け）'};
+function mealLunch(i){const p=s.week[i-1];if(!p)return '弁当（週初めの献立要登録）';const kind=mealKind(p.main);if(kind!=='normal')return '弁当（前夜が'+mealLabel(kind)+'のため別途準備）';return R[p.main]?.n+'（前夜に取り分け）'}
 function recipeLinkFromPlan(recipeKey,day,slot){
  const item=KONDATE_CATALOG.find(x=>x.appId===recipeKey);
  if(item){return '<a class="btn tiny" style="margin-top:7px;width:100%;text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く ↗</a>'}
@@ -228,14 +228,36 @@ function renderPlanner(){
 }
 
 function rejectAndReplace(i,t){let old=s.week[i][t];s.rejected.push(old);let candidates=Object.keys(R).filter(k=>R[k].cat===t&&!s.rejected.includes(k)&&!s.week.some((d,j)=>j!==i&&d[t]===k));if(t==='main' && old==='pasta')candidates=[];if(!candidates.length){s.ratings[id(i,t)]=-1;modal('候補がありません','<p>この分類の代替料理候補がありません。料理データを増やす必要があります。変更前の料理は残しています。</p>');return;}let next=candidates[0];s.week[i][t]=next;s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});delete s.ratings[id(i,t)];}
-function shoppingData(){let agg={};let add=(r,mul=1)=>{if(!r)return;for(let [name,q,u]of r.ings){let key=name+'|'+u; if(!agg[key])agg[key]={name,u,q:0};agg[key].q+=q*mul}};
-for(let i=0;i<7;i++){let d=s.week[i];add(R[d.main],s.people*(d.main==='pasta'?1: i===6?1:2));if(!R[d.main]?.isOneDish){add(R[d.side],s.people);add(R[d.soup],s.people*(s.morningSoup?2:1));} if(d.main!=="pasta")add({ings:[["ご飯（炊飯後）",160,"g"]]},s.people*(i===6?1:2)); // dinner + next breakfast
-add({ings:breakfastEntries()},s.people)}return Object.values(agg).map(x=>{let st=s.stock.filter(y=>y.name===x.name&&y.u===x.u).reduce((a,b)=>a+b.q,0);return {...x,needed:Math.max(0,x.q-st)}}).sort((a,b)=>a.name.localeCompare(b.name,'ja'))}
+function shoppingData(){
+ const agg={};
+ const add=(rec,mul=1)=>{
+  if(!rec?.ings)return;
+  for(const [name,q,u] of rec.ings){
+   const key=name+'|'+u;
+   if(!agg[key])agg[key]={name,u,q:0};
+   agg[key].q+=q*mul;
+  }
+ };
+ for(let i=0;i<7;i++){
+  const d=s.week[i],kind=mealKind(d.main),parts=mealRoles(d);
+  // 夕食主菜を翌日の弁当に取り分ける場合は2人前を作る。
+  // 鍋・カレー・パスタは弁当への自動流用をしない。
+  add(R[d.main],s.people*(kind==='normal'?2:1));
+  if(parts.includes('side'))add(R[d.side],s.people);
+  if(parts.includes('soup'))add(R[d.soup],s.people*(s.morningSoup?2:1));
+  if(kind==='normal'||kind==='curry')add({ings:[['ご飯（炊飯後）',160,'g']]},s.people*(kind==='normal'?2:1));
+  add({ings:breakfastEntries()},s.people);
+ }
+ return Object.values(agg).map(x=>{
+  const stock=s.stock.filter(y=>y.name===x.name&&y.u===x.u).reduce((a,b)=>a+b.q,0);
+  return {...x,needed:Math.max(0,x.q-stock)}
+ }).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+}
 function fmt(n){return Number.isInteger(n)?n:n.toFixed(1)};
 function renderShopping(){el('shoppingbody').innerHTML=shoppingData().map(x=>`<tr class="${s.checked[x.name+'|'+x.u]?'done':''}"><td><input type="checkbox" data-check="${esc(x.name+'|'+x.u)}" ${s.checked[x.name+'|'+x.u]?'checked':''}></td><td>${esc(x.name)}</td><td>${fmt(x.needed)} ${esc(x.u)}</td></tr>`).join('');document.querySelectorAll('[data-check]').forEach(c=>c.onchange=()=>{s.checked[c.dataset.check]=c.checked;save();renderShopping()});el('stocks').innerHTML=s.stock.map((x,i)=>`<div class="tag">${esc(x.name)} ${fmt(x.q)}${esc(x.u)} <button title="削除" data-remove-stock="${i}">×</button></div>`).join('')||'<p class="small muted">在庫登録なし</p>';document.querySelectorAll('[data-remove-stock]').forEach(b=>b.onclick=()=>{s.stock.splice(+b.dataset.removeStock,1);save();renderShopping()})};
 el('addstock').onclick=()=>{let name=el('stock-name').value.trim(),q=+el('stock-quantity').value,u=el('stock-unit').value;if(!name||!Number.isFinite(q)||q<=0)return alert('食材名と正しい数量を入力してください。');s.stock.push({name,q,u});save();el('stock-name').value='';el('stock-quantity').value='';renderShopping()};
 el('copy-shopping').onclick=()=>{let t='買い物リスト\n'+shoppingData().filter(x=>x.needed>0).map(x=>`${x.name} ${fmt(x.needed)}${x.u}`).join('\n');navigator.clipboard?.writeText(t).then(()=>alert('コピーしました')).catch(()=>modal('買い物リスト',`<pre>${esc(t)}</pre>`))||modal('買い物リスト',`<pre>${esc(t)}</pre>`)};
-function getPrompt(){let mode=el('ai-mode').value;const prefs=s.prefs.map(p=>`${p.type}: ${p.name}`).join('、');let base=`あなたは個人用の献立生成AIです。材料数量を含むJSONのみを返してください。コードブロックや説明文は付けないでください。\n条件：${s.people}人分。夕食は主菜・副菜・汁物（汁物必須）。朝食は設定された食材だけを使用。朝食1人分：${JSON.stringify(breakfastEntries())}。朝の汁物：${s.morningSoup?'必要。前夜から取り分ける':'不要'}。翌日の弁当は前夜の料理を取り分ける。パスタは週${s.pastaCount}回、本人指定のレシピを勝手に作らない。白米に合う主菜を優先。酸味の強い味付けを避ける。長野の季節を考慮。\n登録制限：${prefs}。登録されたアレルギー食材を絶対に使用しない。条件付き食材は条件を厳守する。\n料理の各材料は {name,quantity,unit} を列挙し、unitはg/個/本/パックのいずれか。本人が入力していないパスタの材料は推測せず空配列にする。\n評価で却下済み料理：${s.rejected.map(id=>R[id]?.n).filter(Boolean).join('、')||'なし'}。\n`;
+function getPrompt(){let mode=el('ai-mode').value;const prefs=s.prefs.map(p=>`${p.type}: ${p.name}`).join('、');let base=`あなたは個人用の献立生成AIです。材料数量を含むJSONのみを返してください。コードブロックや説明文は付けないでください。\n条件：${s.people}人分。通常の夕食は主菜・副菜・汁物を同系統で揃える。パスタは単品・副菜なし・汁物任意。鍋は主菜と汁物を兼ね副菜任意。カレーは単品・副菜任意、別の主菜と汁物は不要。朝食は設定された食材だけを使用。朝食1人分：${JSON.stringify(breakfastEntries())}。朝の汁物：${s.morningSoup?'必要。前夜から取り分ける':'不要'}。翌日の弁当は前夜の通常主菜を取り分け、必要な材料は夕食分と弁当分の合計量で計算する。食事記録上の重複計上は禁止。鍋・カレー・パスタの翌日の弁当は別途準備とする。パスタは週${s.pastaCount}回、本人指定のレシピを勝手に作らない。白米に合う主菜を優先。酸味の強い味付けを避ける。長野の季節を考慮。\n登録制限：${prefs}。登録されたアレルギー食材を絶対に使用しない。条件付き食材は条件を厳守する。\n料理の各材料は {name,quantity,unit} を列挙し、unitはg/個/本/パックのいずれか。本人が入力していないパスタの材料は推測せず空配列にする。\n評価で却下済み料理：${s.rejected.map(id=>R[id]?.n).filter(Boolean).join('、')||'なし'}。\n`;
 if(mode==='replace'){let day=+el('ai-day').value,slot=el('ai-slot').value;return base+`\n${daynames[day]}曜日の${slotNames[slot]}「${R[s.week[day][slot]]?.n}」1品だけ、全く別の候補へ差し替えてください。他の料理は変更しないでください。\n次の形のJSONを厳守： {"day":${day},"slot":"${slot}","recipe":{"id":"unique_roman_id","name":"新しい料理名","ingredients":[{"name":"食材名","quantity":100,"unit":"g"}]}}`}
 return base+`\n今週の献立：${JSON.stringify(s.week.map(d=>Object.fromEntries(slots.map(t=>[t,R[d[t]].n]))))}\n新しい7日分の献立を考えてください。評価済みの好きな料理は可能な限り維持。パスタの日は料理IDをpastaとして維持。\n出力形式：{"recipes":[{"id":"new_001","name":"料理名","category":"main","ingredients":[{"name":"食材名","quantity":100,"unit":"g"}]}],"week":[{"main":"new_001","side":"existing_or_new_id","soup":"existing_or_new_id"}, ...合計7日分]}。既存の料理IDは ${JSON.stringify(Object.keys(R))}。新しい料理は必ずrecipesに登録。`}
 function renderAI(){el('ai-selectors').style.display=el('ai-mode').value==='replace'?'block':'none';el('ai-prompt').value=getPrompt()};
@@ -295,42 +317,46 @@ s.morningSoup=el('morning-soup').value==='yes';s.pastaCount=+el('pasta-count').v
 
 function newWeekForReset(){
  const previous=s.week.map(d=>({...d}));
- const usedMain=new Set(), usedSide=new Set(), usedSoup=new Set();
- const prefs=s.prefs.filter(p=>p.type==='allergy'||p.type==='dislike');
- const forbidden=prefs.map(p=>p.name.trim()).filter(Boolean);
- const aliases={ 'ウリ科':['きゅうり','かぼちゃ','ズッキーニ','ゴーヤ','冬瓜','メロン','スイカ'],'貝類':['あさり','しじみ','はまぐり','ホタテ','牡蠣','ムール貝','貝'],'海老':['えび','エビ','海老'],'カニ':['かに','カニ','蟹'],'イカ':['いか','イカ','烏賊'],'タコ':['たこ','タコ','蛸']};
+ const used={main:new Set(),side:new Set(),soup:new Set()};
+ const forbidden=s.prefs.filter(p=>p.type==='allergy'||p.type==='dislike').map(p=>p.name.trim()).filter(Boolean);
+ const aliases={'ウリ科':['きゅうり','かぼちゃ','ズッキーニ','ゴーヤ','冬瓜','メロン','スイカ'],'貝類':['あさり','しじみ','はまぐり','ホタテ','牡蠣','ムール貝','貝'],'海老':['えび','エビ','海老'],'カニ':['かに','カニ','蟹'],'イカ':['いか','イカ','烏賊'],'タコ':['たこ','タコ','蛸']};
  function safe(k){
-   const r=R[k];if(!r||!Array.isArray(r.ings)||!r.ings.length)return false;
-   const words=[r.n,...r.ings.map(x=>x[0])].join(' ');
-   return !forbidden.some(f=>(aliases[f]||[f]).some(word=>words.includes(word)));
+  const r=R[k];if(!r?.ings?.length)return false;
+  const words=[r.n,...r.ings.map(x=>x[0])].join(' ');
+  return !forbidden.some(f=>(aliases[f]||[f]).some(w=>words.includes(w)));
  }
- function choose(slot,avoid,used,preferCat){
-   let list=Object.keys(R).filter(k=>R[k].cat===slot&&k!=='pasta'&&safe(k)&&!used.has(k));
-   if(!list.length){used.clear();list=Object.keys(R).filter(k=>R[k].cat===slot&&k!=='pasta'&&safe(k));}
-   if(preferCat){const matching=list.filter(k=>R[k].cuisine===preferCat);if(matching.length)list=matching}
-   const notSame=list.filter(k=>k!==avoid);
-   if(notSame.length)list=notSame;
-   if(!list.length)throw Error(slot+' の安全に確認できる候補が足りません');
-   const chosen=list[Math.floor(Math.random()*list.length)];used.add(chosen);return chosen;
+ function pick(type,avoid,cuisine){
+  const pool=KONDATE_CATALOG.filter(item=>item.category===type&&safe(item.appId)).map(item=>item.appId);
+  if(!pool.length)throw Error(type+' の利用可能な料理がありません');
+  let candidates=pool.filter(k=>!used[type]?.has(k));
+  if(!candidates.length)candidates=pool;
+  if(cuisine){
+   const same=candidates.filter(k=>mealGroup(k)===cuisine);
+   if(same.length)candidates=same;
+  }
+  const different=candidates.filter(k=>k!==avoid);
+  if(different.length)candidates=different;
+  const key=candidates[Math.floor(Math.random()*candidates.length)];
+  if(used[type])used[type].add(key);
+  return key;
  }
  const pastaCount=Math.min(2,Math.max(1,Number(s.pastaCount)||1));
- const pastaDays=pastaCount===2?[2,5]:[2];
+ const pastaDays=new Set(pastaCount===2?[2,5]:[2]);
+ const potDay=6,curryDay=4;
  const next=[];
  for(let i=0;i<7;i++){
-   if(pastaDays.includes(i)){
-      // パスタは種類・材料とも本人の入力が必要なため自動変更しない。
-      next.push({main:'pasta',side:previous[i]?.side||'komatsu',soup:previous[i]?.soup||'wakamesoup'});
-      continue;
-   }
-   const main=choose('main',previous[i]?.main,usedMain);
-   const side=choose('side',previous[i]?.side,usedSide);
-   const soup=choose('soup',previous[i]?.soup,usedSoup);
-   next.push({main,side,soup});
- }
- // 万一選択が元の献立と同じなら並びをずらす（選択候補がある場合）。
- if(next.every((d,i)=>d.main===previous[i]?.main&&d.side===previous[i]?.side&&d.soup===previous[i]?.soup)){
-   const nonPasta=next.map((d,i)=>i).filter(i=>d.main!=='pasta');
-   if(nonPasta.length>1){const a=nonPasta[0],b=nonPasta[1];const t=next[a];next[a]=next[b];next[b]=t}
+  const old=previous[i]||{};
+  if(pastaDays.has(i)){
+   next.push({main:'pasta',side:old.side||'komatsu',soup:old.soup||'wakamesoup',optionalSoup:false,optionalSide:false});
+   continue;
+  }
+  if(i===potDay||i===curryDay){
+   next.push({main:pick(i===potDay?'pot':'curry',old.main),side:old.side||'komatsu',soup:old.soup||'wakamesoup',optionalSide:false,optionalSoup:false});
+   continue;
+  }
+  const main=pick('main',old.main),cuisine=mealGroup(main);
+  const side=pick('side',old.side,cuisine),soup=pick('soup',old.soup,cuisine);
+  next.push({main,side,soup,optionalSoup:false,optionalSide:false});
  }
  return next;
 }
