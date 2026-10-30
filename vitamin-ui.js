@@ -146,7 +146,7 @@
    (gaps.length?'<details class="micro-gaps"><summary>未算出の食材・食事（'+gaps.length+'件）</summary><p>'+gaps.map(esc).join('、')+'</p></details>':'')+
    sourceHtml();
   document.querySelectorAll('[data-micro-view-day]').forEach(b=>b.onclick=()=>{
-   if(sel){sel.value=b.dataset.microViewDay;renderMicro();}
+   if(sel){sel.value=b.dataset.microViewDay;s.microSelectedDay=sel.value;save();renderMicro();}
   });
  }
  const previousNutrition=renderNutrition;
