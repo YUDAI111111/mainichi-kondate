@@ -14,6 +14,8 @@
  const prices=window.KONDATE_ESTIMATES||{};
  const weights=window.KONDATE_UNIT_WEIGHTS||{};
  const itemPrices=window.KONDATE_ITEM_PRICE_PRESETS||{};
+ const microKeys=window.KONDATE_MICRO_KEYS||[];
+ const microFoods=window.KONDATE_MICRO_FOODS||{};
  function foodWeight(name,q,unit){
   if(unit==='g'||unit==='ml')return q;
   const key=name+'|'+unit;
@@ -33,7 +35,31 @@
   if(Object.prototype.hasOwnProperty.call(s.priceOverrides||{},key))return s.priceOverrides[key];
   return itemPrices[key]??(unit==='g'||unit==='ml'?prices[name]?.[6]:null);
  }
- function newTotals(){return {kcal:0,protein:0,fat:0,carb:0,fiber:0,salt:0,price:0,missingNutrition:new Set(),missingPrice:new Set(),count:0};}
+ function newTotals(){
+  return {kcal:0,protein:0,fat:0,carb:0,fiber:0,salt:0,price:0,missingNutrition:new Set(),missingPrice:new Set(),count:0,
+   micro:Object.fromEntries(microKeys.map(k=>[k,0])),
+   microMissing:Object.fromEntries(microKeys.map(k=>[k,new Set()])),
+   microCovered:Object.fromEntries(microKeys.map(k=>[k,0]))};
+ }
+ function plain(t){
+  return {kcal:t.kcal,protein:t.protein,fat:t.fat,carb:t.carb,fiber:t.fiber,salt:t.salt,price:t.price,count:t.count,
+   missingNutrition:[...t.missingNutrition],missingPrice:[...t.missingPrice],micro:{...t.micro},
+   microMissing:Object.fromEntries(microKeys.map(k=>[k,[...t.microMissing[k]]])),
+   microCovered:{...t.microCovered}};
+ }
+ function accumulate(list){
+  const t=newTotals();
+  for(const x of list){
+   for(const key of ['kcal','protein','fat','carb','fiber','salt','price','count'])t[key]+=x[key];
+   for(const name of x.missingNutrition)t.missingNutrition.add(name);
+   for(const name of x.missingPrice)t.missingPrice.add(name);
+   for(const key of microKeys){
+    t.micro[key]+=x.micro[key];t.microCovered[key]+=x.microCovered[key];
+    for(const name of x.microMissing[key])t.microMissing[key].add(name);
+   }
+  }
+  return t;
+ }
  function countOne(t,name,q,unit){
   const d=prices[name],w=foodWeight(name,q,unit),p=priced(name,q,unit);
   if(!d||w==null){
@@ -41,6 +67,14 @@
   }else{
    const factor=w/100;
    ['kcal','protein','fat','carb','fiber','salt'].forEach((key,i)=>{t[key]+=d[i]*factor;});
+  }
+  const microFood=microFoods[name];
+  for(let i=0;i<microKeys.length;i++){
+   const key=microKeys[i],n=microFood?.v?.[i];
+   if(w!=null&&typeof n==='number'&&Number.isFinite(n)){
+    t.micro[key]+=n*w/100;
+    t.microCovered[key]++;
+   }else t.microMissing[key].add(name+'（'+unit+'）');
   }
   if(p==null)t.missingPrice.add(name+'（'+unit+'）');
   else t.price+=p;
@@ -60,37 +94,42 @@
   }
  }
  function addRice(t){countOne(t,'ご飯（炊飯後）',160,'g');}
- function unresolved(t,message){t.missingNutrition.add(message);t.missingPrice.add(message);}
+ function unresolved(t,message){
+  t.missingNutrition.add(message);t.missingPrice.add(message);
+  for(const key of microKeys)t.microMissing[key].add(message);
+ }
  function totals(day){
-  const t=newTotals(),d=s.week[day],kind=mealKind(d.main),roles=mealRoles(d);
-  // 1人分の1日摂取量。夕食の取り分けは翌日の昼だけに含める。
-  for(const [name,q,unit] of breakfastEntries())countOne(t,name,Number(q),unit);
+  const breakfast=newTotals(),lunch=newTotals(),dinner=newTotals(),d=s.week[day],kind=mealKind(d.main),roles=mealRoles(d);
+  // 各食は1人分。2食分調理しても夜に食べるのは1食分であり、翌日の弁当でのみ別計上。
+  for(const [name,q,unit] of breakfastEntries())countOne(breakfast,name,Number(q),unit);
   if(s.morningSoup){
-   if(day===0)unresolved(t,'月曜朝の汁物（前週の日曜未登録）');
+   if(day===0)unresolved(breakfast,'月曜朝の汁物（前週の日曜未登録）');
    else{
     const prev=s.week[day-1],prevKind=mealKind(prev.main);
-    if(prevKind==='normal'||(prevKind==='pasta'&&prev.optionalSoup))addDish(t,prev.soup,false);
-    else unresolved(t,'朝の汁物（前夜が'+mealLabel(prevKind)+'）');
+    if(prevKind==='normal'||(prevKind==='pasta'&&prev.optionalSoup))addDish(breakfast,prev.soup,false);
+    else unresolved(breakfast,'朝の汁物（前夜が'+mealLabel(prevKind)+'）');
    }
   }
   if(bentoNeeded(day)){
-   if(day===0)unresolved(t,'月曜の弁当（前週の日曜未登録）');
+   if(day===0)unresolved(lunch,'月曜の弁当（前週の日曜未登録）');
    else{
     const prev=s.week[day-1],kindPrev=mealKind(prev.main);
     if(kindPrev==='normal'){
-     addDish(t,prev.main,true);
-     addDish(t,prev.side,false);
-     addRice(t);
-    }else unresolved(t,'弁当（前夜が'+mealLabel(kindPrev)+'）');
+     addDish(lunch,prev.main,true);
+     addDish(lunch,prev.side,false);
+     addRice(lunch);
+    }else unresolved(lunch,'弁当（前夜が'+mealLabel(kindPrev)+'）');
    }
   }
-  addDish(t,d.main,kind==='normal');
-  if(roles.includes('side'))addDish(t,d.side,false);
-  if(roles.includes('soup'))addDish(t,d.soup,false);
-  if(kind==='normal'||kind==='curry')addRice(t);
+  addDish(dinner,d.main,kind==='normal');
+  if(roles.includes('side'))addDish(dinner,d.side,false);
+  if(roles.includes('soup'))addDish(dinner,d.soup,false);
+  if(kind==='normal'||kind==='curry')addRice(dinner);
+  const t=accumulate([breakfast,lunch,dinner]);
+  t.meals={breakfast:plain(breakfast),lunch:plain(lunch),dinner:plain(dinner)};
   return t;
  }
- function weeklyPurchases(){
+  function weeklyPurchases(){
   const lines=shoppingData(),miss=[];
   let cost=0;
   for(const line of lines){
@@ -122,7 +161,7 @@
  function budgetValue(){const b=Number(s.weeklyBudget);return s.weeklyBudget!==''&&allow(b)&&b>0?b:null;}
  function signature(){
   return JSON.stringify({
-   week:s.week,breakfast:s.breakfast,morningSoup:s.morningSoup,
+   version:2,week:s.week,breakfast:s.breakfast,morningSoup:s.morningSoup,
    noBentoDays:s.noBentoDays,people:s.people,
    weeklyBudget:s.weeklyBudget,priceOverrides:s.priceOverrides,stock:s.stock
   });
@@ -130,10 +169,7 @@
  function snapshot(){
   const daily=s.week.map((d,i)=>{
    const t=totals(i);
-   const {missingNutrition,missingPrice,...numbers}=t;
-   return {...numbers,
-    missingNutrition:[...missingNutrition],missingPrice:[...missingPrice]
-   };
+   return {...plain(t),meals:t.meals};
   });
   const purchase=weeklyPurchases(),b=budgetValue();
   return {signature:signature(),daily,purchase,budget:b,people:Number(s.people)||1,time:new Date().toISOString()};
