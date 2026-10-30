@@ -98,7 +98,26 @@
    const v=priced(line.name,line.needed,line.u);
    if(v==null)miss.push(line.name+'（'+line.u+'）');else cost+=v;
   }
-  return {cost,miss};
+  // レシピの材料未登録は単価マスターだけでは見つからないため別途検出する。
+  for(let i=0;i<7;i++){
+   const day=s.week[i];
+   for(const slot of mealRoles(day)){
+    const rec=R[day[slot]];
+    if(!rec?.ings?.length)miss.push(daynames[i]+'曜 '+(rec?.n||'料理未登録'));
+   }
+   if(bentoNeeded(i)){
+    if(i===0)miss.push('月曜の弁当（前週献立未登録）');
+    else if(mealKind(s.week[i-1].main)!=='normal')miss.push(daynames[i]+'曜の弁当（別途準備）');
+   }
+   if(s.morningSoup){
+    if(i===0)miss.push('月曜の朝の汁物（前週未登録）');
+    else{
+     const prev=s.week[i-1],kind=mealKind(prev.main);
+     if(kind!=='normal'&&!(kind==='pasta'&&prev.optionalSoup))miss.push(daynames[i]+'曜朝の汁物（別途準備）');
+    }
+   }
+  }
+  return {cost,miss:[...new Set(miss)]};
  }
  function budgetValue(){const b=Number(s.weeklyBudget);return s.weeklyBudget!==''&&allow(b)&&b>0?b:null;}
  function signature(){
@@ -160,11 +179,11 @@
   });
   return '<div class="analysis-kpis">'+
    '<div><small>週の食費予算</small><strong>'+budget+'</strong></div>'+
-   '<div><small>1週間の購入見込み</small><strong>'+money(spent)+(a.purchase.miss.length?' ※':'')+'</strong></div>'+
+   '<div><small>1週間の購入見込み（算出済み分）</small><strong>'+money(spent)+(a.purchase.miss.length?' ※':'')+'</strong></div>'+
    '<div><small>予算との差額</small><strong class="'+(over?'warn-text':'')+'">'+diff+'</strong></div>'+
    '<div><small>今週の食事分（参考）</small><strong>'+money(total)+'</strong></div></div>'+
-   '<p class="analysis-foot">購入見込みは在庫を差し引いた買い物リストから算出。各日の食費は食べる料理の材料費です。両者は一致しません。'+
-    (a.purchase.miss.length?'未登録の食材単価：'+a.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
+   '<p class="analysis-foot">購入見込みは在庫差引後の買い物リストから算出。各日の食費は食べる料理の材料費です。計上範囲が異なり、一致するとは限りません。'+
+    (a.purchase.miss.length?'未計上の材料・食事・単価：'+a.purchase.miss.map(esc).join('、')+'。':'')+'</p>'+
    '<h3>曜日別の食費・栄養素</h3>'+dailyTables(a)+
    (gaps.length?'<details class="analysis-gaps"><summary>計算に含められなかった食材・食事（'+gaps.length+'日）</summary><p>'+gaps.join('</p><p>')+'</p></details>':'');
  }
@@ -194,8 +213,9 @@
    return;
   }
   el('nutrients').innerHTML=summaryHTML();
-  el('nutrition-gaps').innerHTML='<p>食品成分データはアプリ内の仮参考値です。食品ごとの分析値ではありません。エネルギー・たんぱく質・脂質・炭水化物・食物繊維・食塩相当量のみを概算しています。</p>'+
+  el('nutrition-gaps').innerHTML='<p>食品成分データはアプリ内の仮参考値です。公的食品成分表の食品番号との個別照合は済んでいません。エネルギー・たんぱく質・脂質・炭水化物・食物繊維・食塩相当量のみを概算しています。</p>'+
   '<p><a href="https://fooddb.mext.go.jp/" target="_blank" rel="noopener noreferrer">文部科学省 食品成分データベース（食品の正確な成分値を確認）</a></p>'+
+  '<p class="small">以下の栄養素は未計算です：ビタミンA・B1・B2・B6・B12・C・D・E・K、葉酸、カルシウム、鉄、亜鉛、マグネシウム、カリウム。</p>'+
   (isFresh()?'':'<p class="warning">前回の集計結果です。変更を反映するには献立画面で再計算してください。</p>');
  };
  function renderPrices(){
