@@ -227,7 +227,32 @@ function renderPlanner(){
  });
 }
 
-function rejectAndReplace(i,t){let old=s.week[i][t];s.rejected.push(old);let candidates=Object.keys(R).filter(k=>R[k].cat===t&&!s.rejected.includes(k)&&!s.week.some((d,j)=>j!==i&&d[t]===k));if(t==='main' && old==='pasta')candidates=[];if(!candidates.length){s.ratings[id(i,t)]=-1;modal('候補がありません','<p>この分類の代替料理候補がありません。料理データを増やす必要があります。変更前の料理は残しています。</p>');return;}let next=candidates[0];s.week[i][t]=next;s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});delete s.ratings[id(i,t)];}
+function rejectAndReplace(i,t){
+ const d=s.week[i],old=d[t],kind=mealKind(d.main);
+ if(t==='main'&&kind==='pasta'){
+  s.ratings[id(i,t)]=-1;
+  modal('パスタの差し替え','<p>パスタの種類と作り方はご本人指定です。勝手に別の料理を提案しません。</p>');
+  return;
+ }
+ const category=t==='main'?(kind==='pot'?'pot':kind==='curry'?'curry':'main'):t;
+ const sameCuisine=t==='main'?mealGroup(old):mealGroup(d.main);
+ const allowed=KONDATE_CATALOG.filter(item=>item.category===category&&item.appId!==old&&!s.rejected.includes(item.appId)&&R[item.appId]?.ings?.length);
+ let pool=allowed.filter(item=>!s.week.some((day,j)=>j!==i&&day[t]===item.appId));
+ if(!pool.length)pool=allowed;
+ if((kind==='normal'||t!=='main')&&sameCuisine){
+  const matching=pool.filter(item=>item.cuisine===sameCuisine);
+  if(matching.length)pool=matching;
+ }
+ if(!pool.length){
+  s.ratings[id(i,t)]=-1;
+  modal('差し替え候補がありません','<p>指定した料理の分類で別の候補がありません。現在の料理は維持します。</p>');
+  return;
+ }
+ const next=pool[0].appId;
+ s.rejected.push(old);d[t]=next;
+ s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});
+ delete s.ratings[id(i,t)];
+}
 function shoppingData(){
  const agg={};
  const add=(rec,mul=1)=>{
