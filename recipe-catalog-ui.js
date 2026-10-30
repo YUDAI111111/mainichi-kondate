@@ -73,10 +73,22 @@ function catalogUse(recipeId){
 });
 const oldRenderShopping=renderShopping;
 renderShopping=function(){
-  oldRenderShopping();
-  const missing=Array.from(new Set(s.week.flatMap(d=>mealRoles(d)
-    .map(t=>R[d[t]]).filter(rec=>rec&&!rec.ings.length).map(rec=>rec.n))));
-  el("catalog-missing").innerHTML=missing.length
-    ?'<div class="warning" style="margin-bottom:16px"><strong>材料未登録（集計対象外）：</strong>'+missing.map(esc).join("、")+"</div>"
-    :"";
+ oldRenderShopping();
+ const missing=Array.from(new Set(s.week.flatMap(d=>mealRoles(d)
+   .map(t=>R[d[t]]).filter(rec=>rec&&!rec.ings?.length).map(rec=>rec.n))));
+ const lunchGaps=['月曜日の弁当（週初めのため前夜未登録）'];
+ for(let i=1;i<7;i++){
+  if(mealKind(s.week[i-1].main)!=='normal')lunchGaps.push(daynames[i]+'曜日の弁当（前夜が'+mealLabel(mealKind(s.week[i-1].main))+'）');
+ }
+ const alerts=[];
+ if(missing.length)alerts.push('<strong>材料未登録：</strong>'+missing.map(esc).join('、'));
+ if(lunchGaps.length)alerts.push('<strong>弁当材料の追加登録が必要：</strong>'+lunchGaps.map(esc).join('、'));
+ if(s.morningSoup)for(let i=0;i<7;i++){
+  const prev=s.week[(i+6)%7],kind=mealKind(prev.main);
+  if(kind==='curry'||kind==='pasta'&&!prev.optionalSoup) {
+   alerts.push('<strong>朝の汁物を別途準備：</strong>'+daynames[i]+'曜日');
+  }
+ }
+ el("catalog-missing").innerHTML=alerts.length
+ ?'<div class="warning" style="margin-bottom:16px">'+alerts.map(x=>'<p>'+x+'</p>').join('')+'</div>':"";
 };
