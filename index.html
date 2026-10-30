@@ -122,6 +122,62 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,te
 .price-row input{width:95px;padding:6px}
 @media(max-width:750px){.analysis-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.analysis-panel{padding:15px}.analysis-header .btn{width:100%}}
 
+
+/* 週間献立: 横長1曜日1行、月曜から日曜へ縦に続く */
+.days{display:flex;flex-direction:column;gap:14px;overflow:visible;padding:0}
+.day{display:grid;width:100%;min-width:0;overflow:hidden;border-radius:15px;align-items:stretch;grid-template-columns:86px minmax(165px,1fr) minmax(175px,1fr) minmax(0,3fr) minmax(125px,.65fr);grid-template-areas:"weekday breakfast lunch dinner cost"}
+.daytitle{grid-area:weekday;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;text-align:center;padding:16px 8px;background:#e5f0e8;border:0;border-right:1px solid #cbdccf}
+.daytitle strong{font-size:19px;line-height:1.3}.daytitle small{font-size:11px}
+.day .mealblock{min-width:0;border:0;border-right:1px solid #e0e8e1;border-radius:0;margin:0;padding:13px 14px}
+.day .breakfast-block{grid-area:breakfast;background:#f5faf6;border-right:1px solid #d5e6d8}
+.day .lunch-block{grid-area:lunch;background:#f7fafb;border-right:1px solid #d9e3e6}
+.day .lunch-block.no-bento{background:#f4f6f4;border-color:#e0e7e0}
+.day .dinner-block{grid-area:dinner;background:white;padding:13px 15px}
+.day .dinner-block .meallabel{margin-bottom:5px}
+.day .day-kind-picker{display:flex!important;flex-wrap:wrap;gap:6px!important;margin:6px 0 10px!important}
+.day .day-kind-picker .btn{flex:0 0 auto;padding:5px 10px;font-size:11px}
+.dinner-dishes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}
+.dinner-dishes.dishes-1{grid-template-columns:minmax(0,1fr)}.dinner-dishes.dishes-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dinner-dishes .dinneritem{min-width:0;display:flex;flex-direction:column;gap:4px;margin:0;padding:10px;border-radius:10px;background:#f9fbf9}
+.dinner-dishes .dishname{min-height:0;margin:2px 0 5px;font-size:13px;line-height:1.5}
+.dinner-dishes .ratingrow{margin-top:auto;flex-wrap:wrap}
+.dinner-dishes .rating{min-width:0;padding:7px 3px;font-size:11px}
+.dinner-dishes .btn.tiny{width:100%;white-space:normal!important;line-height:1.35;font-size:11px;margin-top:7px}
+.day-analysis{grid-area:cost;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;padding:14px 10px;background:#edf4ee;border:0}
+.day-analysis .cost-label{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.day-analysis .cost-label strong{font-size:18px}.day-analysis .mealnote{font-size:11px}
+.day .breakfast-item{font-size:12px;gap:7px;padding:6px 0}.day .breakfast-soup{font-size:11px;padding:7px 8px;line-height:1.5}
+.day .lunch-recipe{font-size:12px;grid-template-columns:30px minmax(0,1fr)}.day .lunch-recipe small{font-size:10px}.day .lunch-note{font-size:11px}
+@media(max-width:1400px){
+ .day{grid-template-columns:86px minmax(0,1fr) minmax(0,1fr) 125px;grid-template-areas:"weekday breakfast lunch cost" "weekday dinner dinner dinner"}
+ .day .breakfast-block,.day .lunch-block{border-bottom:1px solid #e0e8e1}
+ .day-analysis{border-bottom:1px solid #d8e6dc}
+}
+@media(max-width:950px){
+ .day{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr);grid-template-areas:"weekday breakfast lunch" "weekday dinner dinner" "cost cost cost"}
+ .daytitle strong{font-size:16px}
+ .day-analysis{padding:9px 15px}.day-analysis .cost-label{flex-direction:row;justify-content:space-between;align-items:baseline}.day-analysis .cost-label strong{font-size:15px}
+}
+@media(max-width:600px){
+ .day{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"weekday weekday" "breakfast lunch" "dinner dinner" "cost cost"}
+ .daytitle{flex-direction:row;justify-content:flex-start;gap:10px;text-align:left;padding:10px 15px;border:0;border-bottom:1px solid #cbdccf}
+ .daytitle strong{font-size:17px}
+ .day .breakfast-block,.day .lunch-block{padding:11px 12px}
+ .day .dinner-block{border-top:1px solid #e0e8e1}
+ .dinner-dishes{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+}
+@media(max-width:400px){
+ .day{grid-template-columns:minmax(0,1fr);grid-template-areas:"weekday" "breakfast" "lunch" "dinner" "cost"}
+ .day .breakfast-block,.day .lunch-block{border-right:0}
+ .dinner-dishes{grid-template-columns:minmax(0,1fr)}
+}
+@media print{
+ .days{display:block}
+ .day{display:grid;grid-template-columns:68px minmax(110px,.8fr) minmax(110px,.8fr) minmax(0,2fr) 100px;grid-template-areas:"weekday breakfast lunch dinner cost";margin-bottom:8px;break-inside:avoid}
+ .day .day-kind-picker{display:none!important}
+ .dinner-dishes .dinneritem{padding:4px}
+}
+
 </style>
 </head>
 <body>
@@ -346,7 +402,7 @@ function renderPlanner(){
    '<div class="mealblock breakfast-block"><div class="meallabel">朝食</div>'+breakfastMarkup(i)+'</div>'+
    '<div class="mealblock lunch-block '+(!bentoNeeded(i)?'no-bento':'')+'"><div class="meallabel">弁当</div>'+lunchMarkup(i)+'</div>'+
    '<div class="mealblock dinner-block"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
-   '<div class="toolbar day-kind-picker">'+selectors+'</div>'+cards+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div></div>';
+   '<div class="toolbar day-kind-picker">'+selectors+'</div><div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div></div>';
  }).join('');
  el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
   '<p class="small muted">弁当不要：'+(s.noBentoDays?.length?s.noBentoDays.map(i=>daynames[i]+'曜').join('・'):'なし')+' ／ 通常夕食は翌日の弁当が必要な場合のみ主菜・副菜を各2食分。</p>'+' <p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
