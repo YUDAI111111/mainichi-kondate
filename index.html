@@ -23,6 +23,64 @@
 .breakfast-extras{margin:10px 0 20px;font-size:13px}
 .breakfast-extras summary{font-weight:750;cursor:pointer}
 .breakfast-extras textarea{width:100%;padding:10px;border:1px solid #cbd7cc;border-radius:9px;resize:vertical;font:inherit}
+
+/* 読みやすさ優先の画面刷新：横スクロールの7列表示を廃止 */
+:root{--ink:#1c3025;--muted:#495c50;--brand:#226344;--brand2:#e2f0e6;--bg:#f3f6f3;--panel:#fff;--line:#cbd9cd;--warn:#a54225;--warnbg:#fff1e9}
+body{line-height:1.65}
+.main{max-width:1490px}
+.sidebar{background:#e9f0e9}
+.nav{color:#2c5140}
+.nav.active,.nav:hover{background:#cfe3d3;color:#17462f}
+.top h1{font-weight:850}
+.eyebrow{color:#216144}
+.small,.subtle,.muted,.catalog-meta{color:var(--muted)}
+.subtle{font-size:12px}
+.days{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:17px;overflow:visible;padding-bottom:0;align-items:start}
+.day{min-width:0;border:1px solid #c9d9cc;border-radius:17px;overflow:hidden;box-shadow:0 5px 17px rgba(20,51,30,.065)}
+.daytitle{background:#eaf4ec;border-bottom:1px solid #c8ddce;padding:13px 17px}
+.daytitle strong{font-size:17px;color:#1d4d34}
+.daytitle small{color:#375d44;font-size:12px}
+.mealblock{padding:14px 16px;border-bottom:1px solid #e0eae2}
+.meallabel{font-size:12px;letter-spacing:.03em;color:#246046;margin-bottom:8px;font-weight:850}
+.mealname{font-size:13px;line-height:1.7;color:#233e2e;overflow-wrap:anywhere}
+.breakfast-block{margin:12px 12px 9px;padding:12px 13px;background:#f5faf6;border:1px solid #d2e7d7;border-left:4px solid #5d9a70;border-radius:11px}
+.breakfast-foods{display:flex;flex-direction:column}
+.breakfast-item{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid #e1ebe3;font-size:13px}
+.breakfast-item:last-child{border-bottom:0}
+.breakfast-item span{color:#3b5543;min-width:0;overflow-wrap:anywhere}
+.breakfast-item b{color:#1d3326;font-weight:800;white-space:nowrap;text-align:right}
+.breakfast-soup{margin-top:9px;padding:8px 10px;border-radius:8px;background:#e6f2e9;color:#1d5438;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.lunch-block{margin:0 12px 9px;border:1px solid #d9e1e3;border-left:4px solid #738f9b;border-radius:11px;background:#f7fafb;padding:12px 13px}
+.lunch-block .meallabel{color:#385866}
+.lunch-block.no-bento{background:#f6f7f5;border-color:#e2e5e0;border-left-color:#aab6ad}
+.lunch-block.no-bento .mealname{color:#63756a;font-weight:650}
+.dinner-block{border-top:1px solid #e6ede6;padding:14px 15px}
+.dinner-block .meallabel{font-size:13px;color:#215b3f}
+.day-kind-picker{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px!important;margin:8px 0 12px!important}
+.day-kind-picker button{min-width:0;padding:7px 2px;font-size:11px;white-space:nowrap}
+.dinneritem{border:1px solid #d9e5da;border-radius:11px;padding:12px;background:#fff;margin:8px 0}
+.dishcat{font-size:12px;color:#416a4d}
+.dishname{font-size:15px;line-height:1.5;min-height:0;color:#22372a;overflow-wrap:anywhere;margin:4px 0 7px}
+.ratingrow{gap:7px}
+.rating{font-size:12px;border-color:#cbd9d0;color:#3d5b49;padding:8px 3px}
+.btn.tiny{font-size:12px;min-width:0}
+.dinneritem .btn.tiny{max-width:100%;white-space:normal;line-height:1.45}
+.stats{gap:13px}
+.stat{border-color:#d6e1d8}
+.stat small{color:#4e6456}
+.panel{border-color:#d5e1d7}
+.bento-settings{background:#f5f9f6;border:1px solid #d4e4d8;border-radius:12px;padding:15px;margin:12px 0 20px}
+.bento-settings .breakfast-title{margin:0 0 8px}
+.bento-day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:13px 0}
+.bento-day{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;margin:0;padding:10px 2px;border:1px solid #c9d9cd;border-radius:9px;background:white;cursor:pointer;font-size:13px}
+.bento-day input{margin:0;width:17px;height:17px;accent-color:var(--brand);padding:0}
+.bento-day:has(input:checked){background:#dfece2;border-color:#86ad91;color:#17462d}
+.bento-day span{font-weight:850}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid #578c69;outline-offset:2px}
+@media(max-width:1150px){.days{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}}
+@media(max-width:700px){.days{grid-template-columns:1fr}.day{max-width:100%}.bento-day-grid{gap:4px}.bento-day{font-size:12px}}
+@media print{.days{grid-template-columns:repeat(2,minmax(0,1fr))}.breakfast-block,.lunch-block{break-inside:avoid}}
+
 </style>
 </head>
 <body>
@@ -237,8 +295,8 @@ function renderPlanner(){
   return '<div class="day"><div class="daytitle"><strong>'+daynames[i]+'曜日</strong><small>'+(i+1)+'日目</small></div>'+
    '<div class="mealblock breakfast-block"><div class="meallabel">朝食</div>'+breakfastMarkup(i)+'</div>'+
    '<div class="mealblock lunch-block '+(!bentoNeeded(i)?'no-bento':'')+'"><div class="meallabel">弁当</div><div class="mealname">'+esc(mealLunch(i))+'</div></div>'+
-   '<div class="mealblock"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
-   '<div class="toolbar" style="gap:4px;margin:7px 0;flex-wrap:wrap">'+selectors+'</div>'+cards+optional+'</div></div>';
+   '<div class="mealblock dinner-block"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
+   '<div class="toolbar day-kind-picker">'+selectors+'</div>'+cards+optional+'</div></div>';
  }).join('');
  el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
   '<p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
