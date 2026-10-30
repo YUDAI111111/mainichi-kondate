@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>レシピ | まいにち献立</title>
+<style>
+:root{--ink:#26372e;--green:#3b795f;--line:#e1e8e0;--bg:#f7f8f5}*{box-sizing:border-box}body{font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;line-height:1.65}.wrap{max-width:840px;margin:32px auto;padding:0 18px 48px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}header a{color:var(--green);text-decoration:none;font-weight:700}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:25px 28px;margin:14px 0}h1{font-size:29px;margin:9px 0 13px;letter-spacing:-.03em}h2{font-size:19px;margin:0 0 15px}p{margin:6px 0 12px}.meta{font-size:13px;color:#6a756b}.notice{background:#f0f4ee;padding:12px 14px;border-radius:9px;color:#506252;font-size:13px}.source{display:inline-block;padding:10px 14px;border-radius:9px;border:1px solid #bad2c5;color:#245a40;text-decoration:none;font-weight:700;margin-top:5px}.source:hover{background:#edf7f0}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #eef1ec;padding:11px}th:last-child,td:last-child{text-align:right}ol{padding-left:23px}li{padding:6px 0}select{padding:8px 12px;border:1px solid #cdd8cf;border-radius:8px;font:inherit;background:white}footer{font-size:12px;color:#78857a;margin-top:22px}@media(max-width:600px){h1{font-size:23px}.panel{padding:17px}header{margin-bottom:16px}}@media print{body{background:white}header,select{display:none}.panel{border:0;padding:12px 0}}
+</style></head>
+<body><div class="wrap"><header><strong>まいにち献立 / レシピ</strong><a href="index.html">献立へ戻る</a></header>
+<main id="content"><div class="panel">レシピを読み込み中です。</div></main>
+<footer>分量は1人分の参考量を人数倍して表示します。原典の材料・手順と同じではありません。アレルギーや食材表示は実物でも確認してください。</footer></div>
+<script src="recipe-catalog.js"></script><script src="recipe-details.js"></script>
+<script>
+(function(){
+const root=document.getElementById('content');
+const params=new URLSearchParams(location.search);
+const id=params.get('id');
+const recipe=(window.KONDATE_CATALOG||[]).find(x=>x.id===id);
+const rec=window.KONDATE_RECIPE_DETAILS?.[id?.split('_')[1]||''];
+let people=Number(params.get('people'));
+if(!Number.isInteger(people)||people<1||people>20)people=1;
+if(!recipe||!rec||!Array.isArray(rec.ingredients)||!Array.isArray(rec.steps)){
+ root.textContent='レシピが見つかりません。';return;
+}
+const make=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
+root.replaceChildren();
+const titlebox=make('section',undefined,'panel');
+titlebox.append(make('div',recipe.cuisine+' · '+recipe.style,'meta'),make('h1',recipe.name));
+titlebox.append(make('p',recipe.original?'参考：'+recipe.source+'（掲載料理：'+recipe.original+'）':'家庭料理の登録例','meta'));
+if(recipe.adjustment){titlebox.append(make('p','アプリ向けの変更：'+recipe.adjustment,'notice'))}
+if(recipe.url&&/^https:\/\//.test(recipe.url)){
+ const a=make('a','参考元のレシピを別タブで開く ↗','source');a.href=recipe.url;a.target='_blank';a.rel='noopener noreferrer';titlebox.append(a);
+}else if(recipe.original){titlebox.append(make('p','参考元の直接URLは確認できていません。','meta'))}
+root.append(titlebox);
+const ingredientsSection=make('section',undefined,'panel'),heading=make('h2','材料');
+const lbl=make('label','人数： '),select=make('select');select.id='servings';
+for(let i=1;i<=20;i++){const opt=make('option',i+'人分');opt.value=i;opt.selected=i===people;select.append(opt)}lbl.append(select);
+const table=make('table'),thead=make('thead'),tr=make('tr');tr.append(make('th','食材'),make('th','必要量'));thead.append(tr);table.append(thead);
+const tbody=make('tbody');table.append(tbody);
+function updateIngredients(){people=Number(select.value);tbody.replaceChildren();for(const [name,n,unit] of rec.ingredients){const row=make('tr');const qty=n*people;row.append(make('td',name),make('td',(Number.isInteger(qty)?qty:qty.toFixed(1))+' '+unit));tbody.append(row)}}
+select.addEventListener('change',updateIngredients);updateIngredients();
+ingredientsSection.append(heading,lbl,table,make('p','表示量はアプリ用に設定した参考分量です。主食のご飯や翌日の弁当分は、必要に応じて別途用意してください。','meta'));
+const steps=make('section',undefined,'panel');steps.append(make('h2','作り方（アプリ用の調理手順）'));const list=make('ol');for(const s of rec.steps)list.append(make('li',s));steps.append(list,make('p','料理家の掲載レシピを参考にした料理でも、ここに表示する材料・作り方はアプリ独自の調整例です。原典とは異なります。','notice'));
+root.append(ingredientsSection,steps);
+document.title=recipe.name+' | まいにち献立';
+})();
+</script></body></html>
