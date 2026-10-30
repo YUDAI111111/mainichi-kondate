@@ -76,9 +76,10 @@ renderShopping=function(){
  oldRenderShopping();
  const missing=Array.from(new Set(s.week.flatMap(d=>mealRoles(d)
    .map(t=>R[d[t]]).filter(rec=>rec&&!rec.ings?.length).map(rec=>rec.n))));
- const lunchGaps=['月曜日の弁当（週初めのため前夜未登録）'];
+ const lunchGaps=[];
+ if(bentoNeeded(0))lunchGaps.push('月曜日の弁当（週初めのため前夜未登録）');
  for(let i=1;i<7;i++){
-  if(mealKind(s.week[i-1].main)!=='normal')lunchGaps.push(daynames[i]+'曜日の弁当（前夜が'+mealLabel(mealKind(s.week[i-1].main))+'）');
+  if(bentoNeeded(i)&&mealKind(s.week[i-1].main)!=='normal')lunchGaps.push(daynames[i]+'曜日の弁当（前夜が'+mealLabel(mealKind(s.week[i-1].main))+'）');
  }
  const alerts=[];
  if(missing.length)alerts.push('<strong>材料未登録：</strong>'+missing.map(esc).join('、'));
@@ -87,7 +88,7 @@ renderShopping=function(){
  alerts.push('<strong>月曜朝の汁物：</strong>前週の日曜献立は未登録です');
  for(let i=1;i<7;i++){
   const prev=s.week[i-1],kind=mealKind(prev.main);
-  if(kind==='curry'||kind==='pasta'&&!prev.optionalSoup) {
+  if(kind==='curry'||kind==='pot'||(kind==='pasta'&&!prev.optionalSoup)) {
    alerts.push('<strong>朝の汁物を別途準備：</strong>'+daynames[i]+'曜日');
   }
  }
