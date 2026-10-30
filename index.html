@@ -227,6 +227,29 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,te
 @media(max-width:1100px){.nutrition-day-overview{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:650px){.nutrition-day-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.micro-controls{align-items:stretch;flex-direction:column}.micro-controls select{width:100%;max-width:none}}
 
+
+/* 各曜日の末尾に、手動栄養計算で判定した不足候補だけを一行で表示 */
+.day-micro-gap{
+ grid-column:1 / -1;
+ min-width:0;
+ padding:10px 15px;
+ background:#fffaf5;
+ border-top:1px solid #eedccc;
+ display:flex;
+ align-items:flex-start;
+ flex-wrap:wrap;
+ gap:7px 12px;
+}
+.day-micro-gap .gap-label{flex:0 0 auto;font-size:12px;font-weight:800;color:#80522b;line-height:1.9}
+.day-micro-gap .gap-items{display:flex;flex:1;min-width:0;gap:5px;flex-wrap:wrap;align-items:center}
+.day-micro-gap .gap-tag{background:#fff;border:1px solid #e5ceba;color:#7c4b29;border-radius:6px;padding:3px 7px;font-size:11px;line-height:1.5}
+.day-micro-gap .gap-muted{font-size:12px;color:#667265;line-height:1.8}
+.day-micro-gap .gap-note{font-size:11px;color:#886748;line-height:1.7}
+.day-micro-gap.gap-pending{background:#f6f8f6;border-color:#e0e7e0}
+.day-micro-gap.gap-pending .gap-label{color:#57665a}
+.day-micro-gap.gap-pending .gap-muted{color:#647568}
+@media(max-width:600px){.day-micro-gap{padding:10px 12px}}
+
 </style>
 </head>
 <body>
@@ -451,7 +474,7 @@ function renderPlanner(){
    '<div class="mealblock breakfast-block"><div class="meallabel">朝食</div>'+breakfastMarkup(i)+'</div>'+
    '<div class="mealblock lunch-block '+(!bentoNeeded(i)?'no-bento':'')+'"><div class="meallabel">弁当</div>'+lunchMarkup(i)+'</div>'+
    '<div class="mealblock dinner-block"><div class="meallabel">夕食 · '+(kind==='normal'?'通常':mealLabel(kind))+'</div>'+
-   '<div class="toolbar day-kind-picker">'+selectors+'</div><div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div></div>';
+   '<div class="toolbar day-kind-picker">'+selectors+'</div><div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div><div class="day-micro-gap" data-micro-gap-day="'+i+'"></div></div>';
  }).join('');
  el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
   '<p class="small muted">弁当不要：'+(s.noBentoDays?.length?s.noBentoDays.map(i=>daynames[i]+'曜').join('・'):'なし')+' ／ 通常夕食は翌日の弁当が必要な場合のみ主菜・副菜を各2食分。</p>'+' <p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
