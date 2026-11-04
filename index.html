@@ -791,7 +791,7 @@ el('apply-ai').onclick=()=>{
     throw Error('カレーは同じ料理を2日連続で指定してください（1回調理・2夜）。');
    }
    for(let i=0;i<7;i++){
-    if(mealKind(w[i].main)!=='normal')continue;
+    if(prepared[w[i].main]?.mealKind==='pot'||prepared[w[i].main]?.mealKind==='curry'||w[i].main==='pasta')continue;
     const match=pairingReview(w[i].main,w[i].side,w[i].soup,prepared);
     if(!match.ok)throw Error(daynames[i]+'曜日の食べ合わせが不適切です：'+match.issues.join('／'));
    }
