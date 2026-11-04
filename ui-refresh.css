@@ -225,7 +225,7 @@ details[open]>summary{margin-bottom:11px}
 #stocks .tag,.tag{background:#f0f6f8;border-color:#d5e4eb;color:#3b5a6b}
 .modalbg{background:rgba(18,32,48,.56)}
 .modal{border:1px solid #e3e8ef;box-shadow:0 24px 80px rgba(13,33,52,.25)}
-@media(max-width:1500px){
+@media(max-width:1320px){
  .day{grid-template-columns:82px minmax(0,1fr) minmax(0,1fr) 130px;grid-template-areas:"weekday breakfast lunch cost" "weekday dinner dinner dinner"}
  .day .breakfast-block,.day .lunch-block{border-bottom:1px solid #e0e6ec}
  .day-analysis{border-bottom:1px solid #e1d4ef}
