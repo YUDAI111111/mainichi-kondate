@@ -19,8 +19,10 @@ function renderCatalog(){
     const ref=item.original
       ?"<strong>参考：</strong>"+esc(item.source)+"<div>掲載料理："+esc(item.original)+"</div><div>アプリで調整："+esc(item.adjustment||"未登録")+"</div>"
       :"家庭料理の登録例";
-    return '<article class="catalog-card"><div class="catalog-meta">'+esc(item.cuisine)+" · "+esc(item.style)+" · "+esc(CATALOG_CATEGORY_LABEL[item.category])+
-      '</div><h3>'+esc(item.name)+'</h3><div class="catalog-note">'+ref+'</div><div class="catalog-actions"><a class="btn tiny" style="text-decoration:none;white-space:nowrap" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer">レシピを別タブで開く</a><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
+    return '<article class="catalog-card category-'+esc(item.category)+'"><div class="catalog-card-head"><span class="catalog-kind">'+esc(CATALOG_CATEGORY_LABEL[item.category])+'</span><span class="catalog-meta">'+esc(item.cuisine)+'・'+esc(item.style)+'</span></div>'+
+      '<h3>'+esc(item.name)+'</h3>'+
+      (item.original?'<details class="catalog-disclosure"><summary>参考元と調整内容</summary><div class="catalog-note">'+ref+'</div></details>':'<p class="catalog-note-simple">家庭料理の登録例</p>')+
+      '<div class="catalog-actions"><a class="btn tiny" style="text-decoration:none" href="recipe.html?id='+encodeURIComponent(item.id)+'&people='+Number(s.people)+'" target="_blank" rel="noopener noreferrer" aria-label="材料と作り方を別タブで開く">レシピを見る</a><button class="btn tiny primary" data-catalog-use="'+esc(item.id)+'">献立に使う</button></div></article>';
   }).join("")||"<p>条件に一致する料理はありません。</p>";
   document.querySelectorAll("[data-catalog-detail]").forEach(btn=>btn.onclick=()=>catalogDetail(btn.dataset.catalogDetail));
   document.querySelectorAll("[data-catalog-use]").forEach(btn=>btn.onclick=()=>catalogUse(btn.dataset.catalogUse));
