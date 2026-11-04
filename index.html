@@ -293,6 +293,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,te
 <div class="modalbg" id="modalbg"><div class="modal"><h3 id="modaltitle"></h3><div id="modalcontent"></div><div class="modal-actions"><button id="modalclose" class="btn">閉じる</button></div></div></div>
 <script src="recipe-catalog.js"></script>
 <script src="recipe-details.js"></script>
+<script src="meal-pairing.js"></script>
 <script>
 // 各分量は試作用の1人分。味付けの厳密なレシピや公的栄養値を保証するものではありません。
 const R={
@@ -443,6 +444,81 @@ function recipeAuthor(k){
  return item.source.split('／')[0].trim();
 }
 function mealGroup(k){return R[k]?.cuisine||KONDATE_CATALOG.find(x=>x.appId===k)?.cuisine||'';}
+/* 系統・濃さ・味付け・主要食材の組み合わせを判定。
+ * 組み合わせ基準は料理の嗜好・味のバランスであり、医学的な禁忌ではありません。
+ */
+function pairingReview(main,side,soup,recipes=R){
+ return window.KONDATE_PAIRING.assess(recipes,main,side,soup);
+}
+function pairingAllowedRecipe(key){
+ const rec=R[key];if(!rec?.ings?.length)return false;
+ const text=[rec.n,...rec.ings.map(x=>x[0])].join(' ');
+ const alias={'ウリ科':['きゅうり','かぼちゃ','ズッキーニ','ゴーヤ','冬瓜','メロン','スイカ'],
+  '貝類':['あさり','しじみ','はまぐり','ホタテ','牡蠣','ムール貝','貝'],
+  '海老':['えび','エビ','海老'],'カニ':['かに','カニ','蟹'],'イカ':['いか','イカ','烏賊'],'タコ':['たこ','タコ','蛸']};
+ return !(s.prefs||[]).some(p=>(p.type==='dislike'||p.type==='allergy')&&
+   (alias[p.name.trim()]||[p.name.trim()]).some(x=>x&&text.includes(x)));
+}
+function pairingCatalog(type,cuisine){
+ return KONDATE_CATALOG.filter(x=>x.category===type&&x.cuisine===cuisine&&pairingAllowedRecipe(x.appId))
+   .map(x=>x.appId);
+}
+function pairingSelect(main,opts={}){
+ const cuisine=mealGroup(main);
+ if(!cuisine)return null;
+ const sides=opts.lockSide?[opts.side]:[opts.side,...pairingCatalog('side',cuisine)];
+ const soups=opts.lockSoup?[opts.soup]:[opts.soup,...pairingCatalog('soup',cuisine)];
+ const seen=new Set(),possibilities=[];
+ for(const side of [...new Set(sides.filter(Boolean))]){
+  if(mealGroup(side)!==cuisine||!pairingAllowedRecipe(side))continue;
+  for(const soup of [...new Set(soups.filter(Boolean))]){
+   if(mealGroup(soup)!==cuisine||!pairingAllowedRecipe(soup))continue;
+   const result=pairingReview(main,side,soup);
+   if(!result.ok)continue;
+   const id=side+'|'+soup;
+   if(seen.has(id))continue;seen.add(id);
+   let score=result.score;
+   if(opts.preferCurrent!==false){
+    if(side!==opts.side)score+=10;
+    if(soup!==opts.soup)score+=12;
+   }else{
+    if(side===opts.side)score+=7;
+    if(soup===opts.soup)score+=7;
+   }
+   if(opts.used?.side?.has(side))score+=22;
+   if(opts.used?.soup?.has(soup))score+=24;
+   // Repeated dominant ingredient is penalized even when only a soft issue.
+   possibilities.push({side,soup,score});
+  }
+ }
+ if(!possibilities.length)return null;
+ possibilities.sort((a,b)=>a.score-b.score);
+ const best=possibilities[0].score;
+ const choices=possibilities.filter(x=>x.score<=best+(opts.preferCurrent===false?10:0)).slice(0,12);
+ return choices[Math.floor(Math.random()*choices.length)];
+}
+function harmonizeDay(day,options={}){
+ const d=s.week[day],kind=mealKind(d.main);
+ if(kind!=='normal')return {ok:true,changed:[]};
+ const before={side:d.side,soup:d.soup};
+ const lockSide=options.lockSide===true||options.keepLiked!==false&&s.ratings[id(day,'side')]===1;
+ const lockSoup=options.lockSoup===true||options.keepLiked!==false&&s.ratings[id(day,'soup')]===1;
+ const selected=pairingSelect(d.main,{side:d.side,soup:d.soup,lockSide,lockSoup,
+   preferCurrent:options.preferCurrent!==false});
+ if(!selected)return {ok:false,changed:[]};
+ d.side=selected.side;d.soup=selected.soup;
+ const changed=['side','soup'].filter(t=>d[t]!==before[t]);
+ for(const slot of changed)delete s.ratings[id(day,slot)];
+ return {ok:true,changed};
+}
+function pairingProblems(){
+ return s.week.flatMap((d,i)=>{
+  if(mealKind(d.main)!=='normal')return [];
+  const result=pairingReview(d.main,d.side,d.soup);
+  return result.ok?[]:[{day:i,reasons:result.issues}];
+ });
+}
+
 function chooseMealRecipe(kind,current){
  const items=KONDATE_CATALOG.filter(x=>
   (kind==='normal'?x.category==='main':x.category===kind) &&
