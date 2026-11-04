@@ -59,14 +59,45 @@ function catalogUse(recipeId){
   el("catalog-use-confirm").onclick=()=>{
     const day=Number(el("catalog-day-choice").value);
     if(!Number.isInteger(day)||day<0||day>6)return;
-    if(!R[item.appId].ings.length&&!confirm("この料理は材料が未登録です。アレルギー確認・買い物量・栄養計算ができません。それでも献立に配置しますか？"))return;
-    const kind=mealKind(s.week[day].main);
-    if(kind==='pasta'&&slot==='side'){alert('パスタは副菜なしです。別の曜日を選んでください。');return;}
+    if(!pairingAllowedRecipe(item.appId)){
+      alert('材料が未登録、または苦手・制限食材に該当するため配置できません。');return;
+    }
+    const oldKind=mealKind(s.week[day].main),newKind=slot==='main'?mealKind(item.appId):oldKind;
+    if(slot==='side'&&oldKind==='pasta'){alert('パスタは副菜なしです。別の曜日を選んでください。');return;}
+    if(slot==='soup'&&(oldKind==='pot'||oldKind==='curry')){
+      alert('鍋・カレーには独立した汁物を付けません。');return;
+    }
+    if(item.category==='curry'){
+      if(day===6){alert('カレーは翌日の夜まで続けるため、日曜からは始められません。');return;}
+      if(!confirm(daynames[day]+'曜日と'+daynames[day+1]+'曜日の夕食を同じカレーにしますか？'))return;
+    }
+    if(s.ratings[id(day,slot)]===1&&!confirm('おいしそう評価済みの料理を変更しますか？'))return;
+    const before={...s.week[day]},after=day<6?{...s.week[day+1]}:null;
     s.week[day][slot]=item.appId;
-    if(slot==='main'){s.week[day].optionalSide=false;s.week[day].optionalSoup=false;}
-    if(slot==='side'&&(kind==='pot'||kind==='curry'))s.week[day].optionalSide=true;
-    if(slot==='soup'&&kind==='pasta')s.week[day].optionalSoup=true;
+    if(slot==='main'){
+      s.week[day].optionalSide=false;s.week[day].optionalSoup=false;
+      if(item.category==='curry'){
+        s.week[day+1].main=item.appId;
+        s.week[day+1].optionalSide=false;s.week[day+1].optionalSoup=false;
+      }
+    }
+    if(slot==='side'&&(newKind==='pot'||newKind==='curry'))s.week[day].optionalSide=true;
+    if(slot==='soup'&&newKind==='pasta')s.week[day].optionalSoup=true;
+    if(newKind==='normal'){
+      const result=harmonizeDay(day,{lockSide:slot==='side',lockSoup:slot==='soup',keepLiked:true});
+      if(!result.ok){
+        Object.assign(s.week[day],before);
+        if(after)Object.assign(s.week[day+1],after);
+        alert('料理系統・濃さ・味付けが合いません。別の料理を選択してください。');return;
+      }
+    }
+    if((newKind==='curry'||newKind==='pot')&&slot==='side'&&
+       mealGroup(s.week[day].side)!==mealGroup(s.week[day].main)){
+      Object.assign(s.week[day],before);
+      alert('主菜と副菜の料理系統が異なるため配置できません。');return;
+    }
     delete s.ratings[id(day,slot)];
+    if(item.category==='curry')delete s.ratings[id(day+1,'main')];
     save();renderPlanner();el("modalbg").classList.remove("show");
   };
 }
