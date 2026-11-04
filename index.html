@@ -499,6 +499,19 @@ function pairingSelect(main,opts={}){
 }
 function harmonizeDay(day,options={}){
  const d=s.week[day],kind=mealKind(d.main);
+ if((kind==='pot'||kind==='curry')&&d.optionalSide){
+  const review=window.KONDATE_PAIRING.assessSide(R,d.main,d.side);
+  if(review.ok)return {ok:true,changed:[]};
+  if(options.lockSide===true||options.keepLiked!==false&&s.ratings[id(day,'side')]===1)
+   return {ok:false,changed:[]};
+  const choices=pairingCatalog('side',mealGroup(d.main)).map(side=>({
+   side,result:window.KONDATE_PAIRING.assessSide(R,d.main,side)
+  })).filter(x=>x.result.ok).sort((a,b)=>a.result.score-b.result.score);
+  if(!choices.length)return {ok:false,changed:[]};
+  const original=d.side;d.side=choices[0].side;
+  if(original!==d.side)delete s.ratings[id(day,'side')];
+  return {ok:true,changed:original===d.side?[]:['side']};
+ }
  if(kind!=='normal')return {ok:true,changed:[]};
  const before={side:d.side,soup:d.soup};
  const lockSide=options.lockSide===true||options.keepLiked!==false&&s.ratings[id(day,'side')]===1;
@@ -513,8 +526,10 @@ function harmonizeDay(day,options={}){
 }
 function pairingProblems(){
  return s.week.flatMap((d,i)=>{
-  if(mealKind(d.main)!=='normal')return [];
-  const result=pairingReview(d.main,d.side,d.soup);
+  const kind=mealKind(d.main);
+  const result=kind==='normal'?pairingReview(d.main,d.side,d.soup):
+   ((kind==='pot'||kind==='curry')&&d.optionalSide?
+    window.KONDATE_PAIRING.assessSide(R,d.main,d.side):{ok:true,issues:[]});
   return result.ok?[]:[{day:i,reasons:result.issues}];
  });
 }
@@ -618,11 +633,11 @@ function renderPlanner(){
   else{
    d.optionalSide=!d.optionalSide;
    if(d.optionalSide){
-    if(!R[d.side]||mealGroup(d.side)!==mealGroup(d.main)){
-     const candidates=pairingCatalog('side',mealGroup(d.main));
-     if(!candidates.length){d.optionalSide=false;alert('料理の系統が合う副菜がありません');return;}
-     d.side=candidates[0];
-    }
+    const candidates=pairingCatalog('side',mealGroup(d.main)).map(key=>({
+     key,result:window.KONDATE_PAIRING.assessSide(R,d.main,key)
+    })).filter(x=>x.result.ok).sort((a,b)=>a.result.score-b.result.score);
+    if(!candidates.length){d.optionalSide=false;alert('味の合う副菜が見つかりません');return;}
+    if(!candidates.some(x=>x.key===d.side))d.side=candidates[0].key;
    }
   }
   if(!d.optionalSoup)delete s.ratings[id(day,'soup')];
@@ -642,7 +657,11 @@ function rejectAndReplace(i,t){
  const allowed=KONDATE_CATALOG.filter(item=>item.category===category&&item.appId!==old&&
    !s.rejected.includes(item.appId)&&pairingAllowedRecipe(item.appId));
  const filtered=allowed.filter(item=>{
-  if(kind!=='normal')return t==='main'||mealGroup(item.appId)===mealGroup(d.main);
+  if(kind!=='normal'){
+   if(t==='side'&&(kind==='pot'||kind==='curry'))
+    return window.KONDATE_PAIRING.assessSide(R,d.main,item.appId).ok;
+   return t==='main'||mealGroup(item.appId)===mealGroup(d.main);
+  }
   const draft={...d,[t]:item.appId};
   return !!pairingSelect(draft.main,{
    side:draft.side,soup:draft.soup,
