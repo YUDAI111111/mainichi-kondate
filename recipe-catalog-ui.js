@@ -92,9 +92,9 @@ function catalogUse(recipeId){
       }
     }
     if((newKind==='curry'||newKind==='pot')&&slot==='side'&&
-       mealGroup(s.week[day].side)!==mealGroup(s.week[day].main)){
+       !window.KONDATE_PAIRING.assessSide(R,s.week[day].main,s.week[day].side).ok){
       Object.assign(s.week[day],before);
-      alert('主菜と副菜の料理系統が異なるため配置できません。');return;
+      alert('料理系統・味の濃さ・主要食材の組み合わせが合わないため配置できません。');return;
     }
     delete s.ratings[id(day,slot)];
     if(item.category==='curry')delete s.ratings[id(day+1,'main')];
