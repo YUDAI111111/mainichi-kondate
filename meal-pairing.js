@@ -87,5 +87,19 @@
   return {ok:dedupHard.length===0,score:dedupHard.length*100+dedupSoft.length*12-balancingBonus,
    issues:dedupHard,soft:dedupSoft};
  }
- window.KONDATE_PAIRING={assess,dishInfo};
+ function assessSide(map,mainKey,sideKey){
+  const main=dishInfo(map[mainKey]),side=dishInfo(map[sideKey]);
+  if(!main||!side)return {ok:false,score:1000,issues:["材料・料理が未登録"],soft:[]};
+  const issues=[],soft=[];
+  if(!main.cuisine||!side.cuisine||main.cuisine!==side.cuisine)
+   issues.push("主菜と副菜の料理系統が異なります");
+  if(main.richness>=2&&side.richness>=2)issues.push("濃厚な料理同士が重なっています");
+  for(const ingredient of main.dominant){
+   if(sharedSensitive.has(ingredient)&&side.dominant.has(ingredient))
+    issues.push("主菜と副菜の主要食材「"+ingredient+"」が重複しています");
+  }
+  if(main.creamy&&side.flavors.has("バター"))soft.push("クリーム系の料理とバター味が重なっています");
+  return {ok:issues.length===0,score:issues.length*100+soft.length*12,issues,soft};
+ }
+ window.KONDATE_PAIRING={assess,assessSide,dishInfo};
 })();
