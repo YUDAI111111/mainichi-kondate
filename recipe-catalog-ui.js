@@ -6,6 +6,7 @@ function renderCatalog(){
   const src=el("catalog-source").value;
   const query=el("catalog-query").value.trim().toLocaleLowerCase("ja");
   const matches=KONDATE_CATALOG.filter(item=>{
+    if(item.category==='main'&&!window.KONDATE_RICE_RULES.riceFriendly(item.appId,R,KONDATE_CATALOG))return false;
     if(cat&&item.category!==cat)return false;
     if(cuisine&&item.cuisine!==cuisine)return false;
     if(src){
@@ -14,7 +15,7 @@ function renderCatalog(){
     }
     return !query||[item.name,item.style,item.source,item.original||""].join(" ").toLocaleLowerCase("ja").includes(query);
   });
-  el("catalog-count").textContent="表示 "+matches.length+"品 ／ 登録 "+KONDATE_CATALOG.length+"品（料理家の参考レシピ "+KONDATE_CATALOG.filter(x=>x.original).length+"品）";
+  el("catalog-count").textContent="表示 "+matches.length+"品 ／ 登録 "+KONDATE_CATALOG.length+"品（ご飯に合いにくい洋風主菜は候補から除外）";
   el("catalog-grid").innerHTML=matches.map(item=>{
     const ref=item.original
       ?"<strong>参考：</strong>"+esc(item.source)+"<div>掲載料理："+esc(item.original)+"</div><div>アプリで調整："+esc(item.adjustment||"未登録")+"</div>"
@@ -63,6 +64,12 @@ function catalogUse(recipeId){
       alert('材料が未登録、または苦手・制限食材に該当するため配置できません。');return;
     }
     const oldKind=mealKind(s.week[day].main),newKind=slot==='main'?mealKind(item.appId):oldKind;
+    if(slot==='main'&&newKind==='normal'&&!riceMainAllowed(item.appId,day)){
+      alert(window.KONDATE_RICE_RULES.riceFriendly(item.appId,R,KONDATE_CATALOG)?
+       '洋食の通常主菜は各月の第1月曜を含む週に最大1回です。':
+       'ご飯に合いにくい洋食は献立の候補から除外しています。');
+      return;
+    }
     if(slot==='side'&&oldKind==='pasta'){alert('パスタは副菜なしです。別の曜日を選んでください。');return;}
     if(slot==='soup'&&(oldKind==='pot'||oldKind==='curry')){
       alert('鍋・カレーには独立した汁物を付けません。');return;
