@@ -1,0 +1,294 @@
+/* UI refresh: hierarchy, contrast and consistent meal-role colors.
+   Palette: breakfast=amber, lunch=blue, dinner=coral, spending=violet,
+   nutrition status=warm orange, main action=dark teal. */
+:root{
+ --ink:#1d2c3b;--muted:#4e5f70;--brand:#17685a;--brand2:#e5f5ef;
+ --bg:#f4f6f9;--panel:#fff;--line:#dce4ec;--warn:#a3492d;--warnbg:#fff2e8;
+ --shadow:0 4px 16px rgba(26,45,70,.055);
+ --meal-breakfast:#a36a12;--meal-breakfast-bg:#fff8e8;--meal-breakfast-line:#ebcf92;
+ --meal-lunch:#236b97;--meal-lunch-bg:#f0f8ff;--meal-lunch-line:#b9d8ea;
+ --meal-dinner:#a94d30;--meal-dinner-bg:#fff5f0;--meal-dinner-line:#ebc1af;
+ --meal-cost:#6945a0;--meal-cost-bg:#f5f1fd;--meal-cost-line:#d6c5e9
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+button,input,select,textarea{font:inherit}
+button,a,input,select,summary{transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #f2b357;outline-offset:2px}
+.app{grid-template-columns:216px minmax(0,1fr);align-items:start}
+.sidebar{background:#17283a;color:#f6f9fc;border-color:#17283a;padding:26px 13px;gap:5px;box-shadow:6px 0 20px rgba(16,37,56,.05)}
+.brand{font-size:20px;margin:5px 10px 25px;letter-spacing:-.035em;line-height:1.35}
+.brandmark{background:#ffca68;color:#2a3440;border-radius:10px;width:38px;height:38px}
+.sidebar .nav{color:#d5e0e9;padding:12px 13px;border-radius:10px;border-left:3px solid transparent;font-size:13px;line-height:1.5;min-height:46px}
+.sidebar .nav:hover{background:#29405a;color:white}
+.sidebar .nav.active{background:#31546a;color:white;border-left-color:#ffb95f;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.sidebar .hint{background:#253a4d;border-color:#41566b;color:#d7e5ed;border-radius:12px;font-size:12px;line-height:1.65}
+.sidebar .hint b{color:white}
+.main{max-width:1850px;padding:30px clamp(18px,2.6vw,46px) 55px}
+.top{padding:0 0 15px;border-bottom:1px solid #e0e7ef;margin:0 0 19px;align-items:center}
+.top h1{color:#172a3b;font-size:30px;line-height:1.32;margin:4px 0 8px;font-weight:850}
+.top p{color:#566779;font-size:13px;margin:0;line-height:1.7}
+.eyebrow{color:#17685a;letter-spacing:.04em;font-size:12px}
+.pill{border:1px solid #cfdbe3;background:#f7fafd;color:#52687b}
+.btn{border:1px solid #bdced8;color:#274154;border-radius:9px;min-height:39px;background:#fff;box-shadow:0 1px 1px rgba(15,34,51,.025);padding:8px 12px;font-weight:750;text-decoration:none;font-size:13px;line-height:1.3}
+.btn:hover{filter:none;background:#edf4fa;border-color:#7c9aaf}
+.btn.primary{background:#17685a;border-color:#17685a;color:#fff}
+.btn.primary:hover{background:#105043;border-color:#105043}
+.btn.danger{color:#a43724;border-color:#e0b5ac;background:#fff9f7}
+.btn.danger:hover{background:#ffebe6;border-color:#bc7364}
+.btn.tiny{min-height:31px;padding:6px 10px;font-size:12px}
+.panel,.analysis-panel,.catalog-card,.day{box-shadow:var(--shadow)}
+.panel{border:1px solid #dce5ed;border-radius:16px;padding:22px 23px}
+.panel h2{color:#25374a;font-size:19px;padding-bottom:11px;margin:0 0 17px;border-bottom:1px solid #e7edf2}
+.section{margin-top:26px}
+.sectionhead{align-items:center;margin-bottom:14px}
+.sectionhead h2{font-size:21px;color:#223548}
+.sectionhead p{color:#546678;font-size:13px}
+.small,.subtle,.muted,.catalog-meta{color:#526375}
+.subtle{font-size:12px;line-height:1.65}
+.notice{background:#ebf6f0;border-color:#c7e2d2;color:#2a604c}
+.warning{background:#fff7ee;border-color:#ead6bd;color:#77502d}
+.toolbar{gap:8px;align-items:center}
+input,select,textarea{border:1px solid #bfcbd7;color:#263b4d;background:#fff;border-radius:9px}
+input:focus,select:focus,textarea:focus{outline:2px solid #8bbdb4;outline-offset:1px}
+input[type=checkbox]{accent-color:#17685a}
+label{color:#324759}
+details summary{cursor:pointer;color:#29465a;font-weight:800}
+details[open]>summary{margin-bottom:11px}
+.footer{border-top:1px solid #dce4ec;padding-top:15px;color:#637285}
+.stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 19px}
+.stat{padding:12px 16px;border-radius:12px;border:1px solid #dfe6ed;position:relative;overflow:hidden}
+.stat:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#7090ad}
+.stat:nth-child(1):before{background:#1f8a78}
+.stat:nth-child(2):before{background:#3f87bb}
+.stat:nth-child(3):before{background:#bf8353}
+.stat:nth-child(4):before{background:#8b6db2}
+.stat strong{font-size:23px;margin:0;color:#22364a}
+.stat small{font-size:11px;color:#617080}
+.overview-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.8fr);gap:14px;margin:0 0 15px}
+.overview-grid .analysis-panel{margin:0;min-height:100%;padding:16px 19px;border-radius:14px}
+.overview-heading{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.overview-heading h2{margin:0;font-size:18px;color:#25374b}
+.overview-heading p{margin:2px 0 0;color:#596b7d;font-size:12px}
+.overview-icon{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;border-radius:10px;font-size:17px;font-weight:850}
+.budget-overview{border-top:4px solid #8466b1;background:#fff}
+.budget-overview .overview-icon{background:#eee5f7;color:#674297}
+.nutrition-overview{border-top:4px solid #d09045;background:#fff}
+.nutrition-overview .overview-icon{background:#fff0d9;color:#915d24}
+.nutrition-overview>.btn{width:100%;min-height:43px;font-size:14px}
+.nutrition-overview .analysis-status{font-size:12px;margin:9px 0 0;line-height:1.55}
+.analysis-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:3px 0 8px}
+.analysis-kpis>div{background:#faf8fe;border:1px solid #eadff3;border-radius:10px;padding:10px}
+.analysis-kpis small{font-size:11px;line-height:1.5;color:#635579}
+.analysis-kpis strong{font-size:16px;color:#533680;line-height:1.35;margin-top:4px}
+.analysis-kpis .warn-text{color:#a03d25!important}
+.analysis-foot{margin:6px 0 0;color:#6b6077;font-size:11px}
+.planner-help{margin:7px 0 18px;background:#fff;border:1px solid #dbe4eb;border-radius:10px;padding:10px 14px;font-size:12px;color:#4b6273}
+.planner-help summary{font-size:12px;font-weight:750}
+.planner-help p{margin:8px 0 2px;line-height:1.8}
+.meal-legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.meal-legend span{font-size:11px;font-weight:850;border-radius:6px;padding:4px 9px;letter-spacing:.01em;border:1px solid}
+.legend-breakfast{background:var(--meal-breakfast-bg);border-color:var(--meal-breakfast-line)!important;color:#86570d}
+.legend-lunch{background:var(--meal-lunch-bg);border-color:var(--meal-lunch-line)!important;color:#205e83}
+.legend-dinner{background:var(--meal-dinner-bg);border-color:var(--meal-dinner-line)!important;color:#97432b}
+.legend-cost{background:var(--meal-cost-bg);border-color:var(--meal-cost-line)!important;color:#66449a}
+.planner-actions .btn.primary{background:#17685a}
+.planner-actions .btn:not(.primary){background:white}
+.days{display:flex!important;flex-direction:column;gap:13px;overflow:visible!important;padding:0!important}
+.day{display:grid;grid-template-columns:89px minmax(150px,.86fr) minmax(163px,.94fr) minmax(345px,2.8fr) minmax(119px,.64fr);grid-template-areas:"weekday breakfast lunch dinner cost";background:white;width:100%;border-radius:14px;overflow:hidden;min-width:0;border:1px solid #d6e0e9;align-items:stretch}
+.daytitle{grid-area:weekday;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;padding:14px 6px;background:#e8f0ed;border:0;border-right:1px solid #cfddd6;min-width:0}
+.daytitle strong{font-size:18px;color:#1c5646;line-height:1.25}
+.daytitle small{font-size:11px;font-weight:750;color:#3f655a;line-height:1.4}
+.day--curry .daytitle{background:#fff0dc;border-color:#e9cb96}
+.day--curry .daytitle strong{color:#9d5e13}
+.day--pasta .daytitle{background:#e4f0fd;border-color:#bed6ec}
+.day--pasta .daytitle strong{color:#265d8f}
+.day--pot .daytitle{background:#efe8fa;border-color:#d9c9eb}
+.day--pot .daytitle strong{color:#684493}
+.day .mealblock{min-width:0;margin:0;padding:13px 13px;border:0;border-right:1px solid #e0e5ed;border-radius:0}
+.day .meallabel{font-weight:900;font-size:13px;letter-spacing:.015em;margin:0 0 11px;display:flex;align-items:center;gap:7px;line-height:1.2}
+.day .meallabel:before{content:"";width:6px;height:16px;flex:0 0 6px;border-radius:3px;background:currentColor}
+.day .breakfast-block{grid-area:breakfast;background:var(--meal-breakfast-bg);border-right:1px solid #edddbf}
+.breakfast-block .meallabel{color:#86570d}
+.day .lunch-block{grid-area:lunch;background:var(--meal-lunch-bg);border-right:1px solid #d6e6f3}
+.lunch-block .meallabel{color:#1d638b!important}
+.day .lunch-block.no-bento{background:#f5f7f9;border-color:#e0e6ea}
+.lunch-block.no-bento .meallabel{color:#66778a!important}
+.day .dinner-block{grid-area:dinner;background:var(--meal-dinner-bg);border:0;border-right:1px solid #f1dbd2;padding:13px 14px}
+.dinner-block .meallabel{color:#9d4b2d!important}
+.day .breakfast-item{font-size:13px;line-height:1.5;gap:7px;padding:6px 0;border-bottom-color:#f0dfc0}
+.day .breakfast-item span{color:#5d5035}
+.day .breakfast-item b{color:#3a3021;font-weight:850}
+.day .breakfast-soup{background:#fff0d0;color:#6a4d18;border:1px solid #efd7a4;border-radius:7px;padding:7px 9px;font-size:12px}
+.lunch-recipe{grid-template-columns:35px minmax(0,1fr);gap:8px;margin:6px 0}
+.day .lunch-recipe small{color:#436b86;font-size:11px}
+.day .lunch-recipe strong{color:#24475e;font-size:12px;line-height:1.5}
+.day .lunch-note{font-size:11px;color:#456b85}
+.day .meal-state{font-size:13px;color:#647585}
+.day .mealnote{font-size:12px;color:#627080}
+.day .day-kind-picker{display:flex!important;flex-wrap:wrap;gap:4px!important;margin:0 0 11px!important;padding:3px;background:#fff;border:1px solid #e6d1c8;border-radius:9px;width:max-content;max-width:100%}
+.day .day-kind-picker .meal-choice{min-height:28px;padding:5px 10px;font-size:11px;border:1px solid transparent;background:transparent;color:#64717c;box-shadow:none;border-radius:7px}
+.day .day-kind-picker .meal-choice.primary{color:#fff;background:#9d4e34;border-color:#9d4e34;box-shadow:0 1px 3px rgba(75,36,25,.2)}
+.day .day-kind-picker .meal-choice:not(.primary):hover{background:#fbece6;color:#93492e}
+.dinner-dishes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dinner-dishes.dishes-1{grid-template-columns:minmax(0,1fr)}
+.dinner-dishes.dishes-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dinner-dishes .dinneritem{margin:0;gap:4px;padding:10px;background:#fff;border:1px solid #e8d5cb;border-radius:10px;min-width:0;box-shadow:0 1px 3px rgba(65,43,34,.02)}
+.dinner-dishes .dish-slot--main{border-top:3px solid #bf6144}
+.dinner-dishes .dish-slot--side{border-top:3px solid #488e66}
+.dinner-dishes .dish-slot--soup{border-top:3px solid #5588bd}
+.dinner-dishes .dishcat{display:inline-flex;align-self:flex-start;font-size:11px;font-weight:900;line-height:1.3;border-radius:5px;padding:3px 6px;background:#fce8de;color:#a4462f}
+.dinner-dishes .dish-slot--side .dishcat{background:#e7f5ea;color:#226945}
+.dinner-dishes .dish-slot--soup .dishcat{background:#e8f1fd;color:#28629d}
+.dinner-dishes .dishname{font-size:13px;line-height:1.55;color:#293a46;margin:2px 0 5px;min-height:0;font-weight:850}
+.dinner-dishes .ratingrow{display:flex;gap:5px;margin-top:auto;flex-wrap:wrap}
+.dinner-dishes .rating{flex:1 1 auto;width:auto;min-width:0;font-size:11px;line-height:1.35;padding:7px 5px;border-radius:7px;border:1px solid #c9d8d1;background:#f4f9f6;color:#2b6b4f;font-weight:850}
+.dinner-dishes .rating[data-rating="-1"]{background:#fff7f3;border-color:#e9ccc2;color:#a34c35}
+.dinner-dishes .rating:hover{filter:none;box-shadow:0 0 0 2px #e5f1e8}
+.dinner-dishes .rating[data-rating="-1"]:hover{background:#fce9e2}
+.dinner-dishes .rating.liked{background:#def1e5;border-color:#7cb995;color:#185e3c}
+.dinner-dishes .btn.tiny{width:100%;min-height:30px;margin-top:6px!important;background:#edf4f9;border:1px solid #ccdce8;color:#285b80;font-size:12px;font-weight:850;white-space:normal!important;text-align:center}
+.dinner-dishes .btn.tiny:hover{background:#e1eff9;border-color:#9dbbd2}
+.curry-note{margin:0 0 10px;padding:9px 11px;border-left:4px solid #d18a2a;background:#fff4e3;border-radius:8px;color:#6f4e1c;font-size:12px;font-weight:750}
+.day-analysis{grid-area:cost;padding:14px 10px;background:var(--meal-cost-bg);border:0;display:flex;align-items:stretch;justify-content:center}
+.day-analysis .cost-label{display:flex;flex-direction:column;align-items:flex-start;gap:7px;color:#624586;font-size:11px;font-weight:800;line-height:1.4}
+.day-analysis .cost-label strong{font-size:21px;font-weight:900;color:#5a378b;white-space:nowrap;letter-spacing:-.025em}
+.day-analysis .mealnote{font-size:11px;color:#806a9a;line-height:1.5}
+.day-micro-gap{grid-area:auto;grid-column:1/-1;background:#fff8f1;border-top:1px solid #eddbc3;padding:10px 14px;align-items:center}
+.day-micro-gap[hidden]{display:none!important}
+.day-micro-gap .gap-label{color:#995b2b;font-weight:850;font-size:12px}
+.day-micro-gap .gap-tag{border-color:#edd4b8;background:#fff;color:#855321;font-size:11px;padding:4px 8px}
+.day-micro-gap .gap-note{color:#866243;font-size:11px}
+.catalog-controls{background:#fff;border:1px solid #d9e3ed;border-radius:13px;padding:13px;gap:10px;margin:17px 0}
+.catalog-controls select,.catalog-controls input{border-color:#bfcbd7;min-height:42px;font-size:13px}
+.catalog-grid{gap:13px}
+.catalog-card{border-color:#dbe4ed;border-radius:13px;padding:15px;gap:9px;box-shadow:0 3px 11px rgba(30,49,70,.045)}
+.catalog-card h3{font-size:17px;color:#233648;line-height:1.4;margin:0}
+.catalog-card-head{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.catalog-kind{font-size:11px;font-weight:850;padding:4px 8px;background:#fcebe5;color:#a24b31;border-radius:6px;border:1px solid #f1d7ce}
+.catalog-card.category-side .catalog-kind{background:#e9f6ed;color:#276a47;border-color:#c9e7d3}
+.catalog-card.category-soup .catalog-kind{background:#e7f2ff;color:#2b648e;border-color:#cee1f3}
+.catalog-card.category-pot .catalog-kind{background:#f0eafd;color:#6744a0;border-color:#ded0f1}
+.catalog-card.category-curry .catalog-kind{background:#fff0d5;color:#97621c;border-color:#ecd4a4}
+.catalog-meta{font-size:11px;color:#617383;font-weight:750}
+.catalog-card .catalog-actions{gap:8px}
+.catalog-card .catalog-actions .btn{flex:1 1 125px;text-align:center}
+.catalog-card .catalog-actions .btn.primary{background:#17685a}
+.catalog-disclosure{border-top:1px solid #e6ecf2;padding-top:8px;margin-top:2px}
+.catalog-disclosure summary{font-size:12px;color:#45627a}
+.catalog-disclosure .catalog-note{margin:8px 0 0;font-size:12px;line-height:1.75;color:#546879}
+.catalog-note-simple{color:#647587;font-size:12px;line-height:1.5}
+.settings-grid{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);align-items:start;gap:17px}
+.settings-subgroup{border:1px solid #dce6ed;border-radius:12px;background:#fafbfd;padding:15px 17px;margin:16px 0}
+.settings-subgroup h3{font-size:15px;font-weight:850;margin:0 0 13px;padding-bottom:8px;border-bottom:1px solid #e5ecf1;color:#29485d}
+.settings-subgroup .field:last-child{margin-bottom:0}
+.settings-subgroup .field{margin-bottom:13px}
+.settings-subgroup .field label{font-size:13px}
+.settings-subgroup .field input[type=number]{max-width:190px}
+.settings-bento{background:#f0f7ff;border-color:#cbdff1}
+.settings-bento h3{color:#245f89;border-color:#cfe1ed}
+.settings-breakfast{background:#fffaf0;border-color:#efdfb7}
+.settings-breakfast h3{color:#8c6118;border-color:#ecdbaa}
+.bento-settings{background:transparent;border:0;padding:0;margin:0}
+.bento-day-grid{gap:7px}
+.bento-day{border:1px solid #b9d3e6;border-radius:9px;min-height:55px;background:#fff;padding:8px 2px}
+.bento-day:has(input:checked){background:#dceeff;color:#1f638f;border-color:#74a6ce}
+.bento-day span{font-size:13px}
+.breakfast-title{font-size:14px;margin:16px 0 9px}
+.breakfast-row{gap:10px;margin:8px 0 14px}
+.breakfast-row label{font-size:12px}
+.check-label{color:#3b4e5b}
+.settings-save{width:100%;min-height:45px}
+.price-list{border-color:#d7e0e9}
+.price-row{border-color:#e6edf1}
+.two{gap:17px}
+.nutrition-day-overview button{background:#fff;border-color:#d5e0e9;min-height:90px;font-size:12px;padding:11px}
+.nutrition-day-overview button.active{border:2px solid #17685a;background:#ebf8f1}
+.nutrition-day-overview button span{color:#98592b}
+.micro-deficit-summary{background:#fff5ec;border-color:#eacdb1}
+.micro-deficit-summary h3{color:#8a4b21}
+.micro-card{background:#fff;border-color:#dce4ed}
+.micro-card.micro-below{background:#fff8f0;border-color:#edcaa6}
+.micro-card.micro-met{background:#f2faf5;border-color:#c1dfcb}
+.micro-card.micro-unknown{background:#f3f6f8;border-color:#d8e0e6}
+.micro-title{color:#30475a}
+.micro-value{color:#1c5f50}
+.micro-standard{color:#52687a}
+.micro-coverage{color:#607080}
+.micro-warning{background:#fff8ef;border-color:#e8d6be;color:#78512d}
+.tbl th{background:#f3f7fa;color:#3b5264;padding:12px 11px;border-bottom:1px solid #dce5ed;font-size:12px}
+.tbl td{padding:12px 11px;border-bottom:1px solid #e8eef3}
+.tbl tbody tr:nth-child(even){background:#fbfcfe}
+.tbl tbody tr:hover{background:#f1f7fb}
+.tbl input[type=checkbox]{width:18px;height:18px}
+.tbl .done td{text-decoration:line-through;opacity:.55}
+#stocks .tag,.tag{background:#f0f6f8;border-color:#d5e4eb;color:#3b5a6b}
+.modalbg{background:rgba(18,32,48,.56)}
+.modal{border:1px solid #e3e8ef;box-shadow:0 24px 80px rgba(13,33,52,.25)}
+@media(max-width:1500px){
+ .day{grid-template-columns:82px minmax(0,1fr) minmax(0,1fr) 130px;grid-template-areas:"weekday breakfast lunch cost" "weekday dinner dinner dinner"}
+ .day .breakfast-block,.day .lunch-block{border-bottom:1px solid #e0e6ec}
+ .day-analysis{border-bottom:1px solid #e1d4ef}
+}
+@media(max-width:1130px){
+ .overview-grid{grid-template-columns:1fr}
+ .analysis-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .settings-grid{grid-template-columns:1fr}
+ .day{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr);grid-template-areas:"weekday breakfast lunch" "weekday dinner dinner" "cost cost cost"}
+ .day-analysis{padding:10px 14px;border-bottom:0;border-top:1px solid #e2d9ee}
+ .day-analysis .cost-label{flex-direction:row;justify-content:space-between;gap:14px;align-items:baseline}
+ .day-analysis .cost-label strong{font-size:17px}
+}
+@media(max-width:700px){
+ .app{display:block}
+ .sidebar{position:static;height:auto;padding:11px 14px;box-shadow:none}
+ .sidebar .brand{margin:0;font-size:18px}
+ .sidebar .brandmark{width:32px;height:32px;font-size:17px}
+ .sidebar .nav,.sidebar .hint{display:none}
+ .mobile-nav{display:flex;position:sticky;top:0;z-index:3;background:#17283a;padding:8px 10px;gap:4px;overflow-x:auto;margin:0 -14px 18px;box-shadow:0 3px 12px rgba(23,40,58,.16)}
+ .mobile-nav .nav{display:block;color:#deebf1;background:transparent;border:1px solid transparent;font-size:12px;padding:9px 11px;white-space:nowrap;border-radius:8px}
+ .mobile-nav .nav.active{background:#2b536a;color:#fff;border-color:#416d82}
+ .main{padding:0 14px 28px}
+ .top{margin-top:12px;padding-bottom:14px;gap:12px}
+ .top h1{font-size:25px}
+ .top .toolbar{gap:6px}
+ .top .pill{font-size:11px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .stat{padding:12px}
+ .stat strong{font-size:20px}
+ .analysis-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .day{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"weekday weekday" "breakfast lunch" "dinner dinner" "cost cost"}
+ .daytitle{flex-direction:row;justify-content:flex-start;text-align:left;gap:10px;padding:10px 13px;border:0;border-bottom:1px solid #d1e0dc}
+ .daytitle strong{font-size:17px}
+ .day .mealblock{padding:11px 12px}
+ .day .dinner-block{border-top:1px solid #efd7cc}
+ .dinner-dishes{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+ .meal-legend{gap:4px}
+ .planner-actions{width:100%}
+ .planner-actions .btn{flex:1;min-width:0}
+ .catalog-grid,.catalog-controls{grid-template-columns:1fr}
+ .catalog-controls{gap:8px}
+ .panel{padding:16px}
+ .settings-subgroup{padding:13px}
+ .bento-day-grid{gap:3px}
+ .bento-day{padding:6px 2px;min-height:50px}
+ .bento-day span{font-size:12px}
+}
+@media(max-width:400px){
+ .day{grid-template-columns:1fr;grid-template-areas:"weekday" "breakfast" "lunch" "dinner" "cost"}
+ .day .breakfast-block,.day .lunch-block{border-right:0;border-bottom:1px solid #e1e6ec}
+ .dinner-dishes{grid-template-columns:1fr}
+ .day .day-kind-picker{width:100%}
+ .day .day-kind-picker .meal-choice{flex:1;padding:5px 4px}
+ .nutrition-day-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{
+ .sidebar,.mobile-nav,.planner-help,.planner-actions,.ratingrow,.day-kind-picker,.btn,.catalog-controls{display:none!important}
+ .app{display:block}
+ .main{padding:0;max-width:none}
+ .overview-grid{grid-template-columns:1fr 1fr}
+ .day{grid-template-columns:70px minmax(100px,1fr) minmax(100px,1fr) minmax(0,2fr) 100px;grid-template-areas:"weekday breakfast lunch dinner cost";break-inside:avoid;margin-bottom:9px}
+ .day .dinneritem{padding:6px}
+ .dinner-dishes .btn.tiny{display:none!important}
+ .day-analysis .cost-label{flex-direction:column;align-items:flex-start}
+}
