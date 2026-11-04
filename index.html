@@ -519,13 +519,19 @@ function pairingProblems(){
  });
 }
 
-function chooseMealRecipe(kind,current){
- const items=KONDATE_CATALOG.filter(x=>
-  (kind==='normal'?x.category==='main':x.category===kind) &&
-  x.appId!==current && R[x.appId]?.ings?.length
- );
+function chooseMealRecipe(kind,current,day){
  if(kind==='pasta')return 'pasta';
- if(!items.length)throw Error('候補がありません');
+ let items=KONDATE_CATALOG.filter(x=>
+  (kind==='normal'?x.category==='main':x.category===kind) &&
+  x.appId!==current && pairingAllowedRecipe(x.appId)
+ );
+ if(kind==='normal'&&Number.isInteger(day)){
+  const d=s.week[day],lockedSide=s.ratings[id(day,'side')]===1,
+   lockedSoup=s.ratings[id(day,'soup')]===1;
+  items=items.filter(x=>pairingSelect(x.appId,{side:d.side,soup:d.soup,
+   lockSide:lockedSide,lockSoup:lockedSoup}));
+ }
+ if(!items.length)throw Error('味の組み合わせが合う候補がありません');
  return items[Math.floor(Math.random()*items.length)].appId;
 }
 function mealLabel(kind){return ({normal:'通常',pasta:'パスタ',pot:'鍋',curry:'カレー'})[kind]||kind}
@@ -589,8 +595,15 @@ function renderPlanner(){
   if(kind==='curry'&&day===6){alert('カレーは翌日夜まで続けるため、日曜以外を開始日にしてください。');return;}
   if(kind==='curry'&&!confirm(daynames[day]+'曜と'+daynames[day+1]+'曜の夕食を、同じカレーに変更しますか？'))return;
   if(kind==='pasta'&&s.week.filter((d,i)=>i!==day&&mealKind(d.main)==='pasta').length>=Number(s.pastaCount)){alert('パスタは週'+s.pastaCount+'回の設定です。先に別のパスタの日を変更してください。');return;}
-  try{current.main=chooseMealRecipe(kind,current.main)}catch(ex){alert(ex.message);return}
-  current.optionalSide=false;current.optionalSoup=false;
+  const original={...current};
+  try{
+   current.main=chooseMealRecipe(kind,current.main,day);
+   current.optionalSide=false;current.optionalSoup=false;
+   if(kind==='normal'){
+    const adjusted=harmonizeDay(day,{keepLiked:true});
+    if(!adjusted.ok)throw Error('おいしそう評価済みの料理を維持したまま、味の合う副菜・汁物を選べませんでした');
+   }
+  }catch(ex){Object.assign(current,original);alert(ex.message);return}
   if(kind==='curry'){
    s.week[day+1].main=current.main;
    s.week[day+1].optionalSide=false;s.week[day+1].optionalSoup=false;
@@ -602,7 +615,16 @@ function renderPlanner(){
  document.querySelectorAll('[data-optional-day]').forEach(btn=>btn.onclick=()=>{
   const day=+btn.dataset.optionalDay,slot=btn.dataset.optionalSlot,d=s.week[day];
   if(slot==='soup'){d.optionalSoup=!d.optionalSoup;if(d.optionalSoup&&!R[d.soup])d.soup='wakamesoup';}
-  else {d.optionalSide=!d.optionalSide;if(d.optionalSide&&!R[d.side])d.side='komatsu';}
+  else{
+   d.optionalSide=!d.optionalSide;
+   if(d.optionalSide){
+    if(!R[d.side]||mealGroup(d.side)!==mealGroup(d.main)){
+     const candidates=pairingCatalog('side',mealGroup(d.main));
+     if(!candidates.length){d.optionalSide=false;alert('料理の系統が合う副菜がありません');return;}
+     d.side=candidates[0];
+    }
+   }
+  }
   if(!d.optionalSoup)delete s.ratings[id(day,'soup')];
   if(!d.optionalSide)delete s.ratings[id(day,'side')];
   save();renderPlanner();
@@ -617,23 +639,33 @@ function rejectAndReplace(i,t){
   return;
  }
  const category=t==='main'?(kind==='pot'?'pot':kind==='curry'?'curry':'main'):t;
- const sameCuisine=t==='main'?mealGroup(old):mealGroup(d.main);
- const allowed=KONDATE_CATALOG.filter(item=>item.category===category&&item.appId!==old&&!s.rejected.includes(item.appId)&&R[item.appId]?.ings?.length);
- let pool=allowed.filter(item=>!s.week.some((day,j)=>j!==i&&day[t]===item.appId));
- if(!pool.length)pool=allowed;
- if((kind==='normal'||t!=='main')&&sameCuisine){
-  const matching=pool.filter(item=>item.cuisine===sameCuisine);
-  if(matching.length)pool=matching;
- }
- if(!pool.length){
-  s.ratings[id(i,t)]=-1;
-  modal('差し替え候補がありません','<p>指定した料理の分類で別の候補がありません。現在の料理は維持します。</p>');
+ const allowed=KONDATE_CATALOG.filter(item=>item.category===category&&item.appId!==old&&
+   !s.rejected.includes(item.appId)&&pairingAllowedRecipe(item.appId));
+ const filtered=allowed.filter(item=>{
+  if(kind!=='normal')return t==='main'||mealGroup(item.appId)===mealGroup(d.main);
+  const draft={...d,[t]:item.appId};
+  return !!pairingSelect(draft.main,{
+   side:draft.side,soup:draft.soup,
+   lockSide:t==='side'||s.ratings[id(i,'side')]===1,
+   lockSoup:t==='soup'||s.ratings[id(i,'soup')]===1
+  });
+ });
+ if(!filtered.length){
+  modal('差し替え候補がありません','<p>味付け・料理系統・好き嫌いを守ったまま差し替えられる料理がありません。献立は維持しました。</p>');
   return;
  }
- const next=pool[0].appId;
- s.rejected.push(old);d[t]=next;
+ // 選べる料理の中から今週未使用を優先。候補が複数ある場合はランダムに選択。
+ const unused=filtered.filter(item=>!s.week.some((day,j)=>j!==i&&day[t]===item.appId));
+ const choices=unused.length?unused:filtered;
+ const next=choices[Math.floor(Math.random()*choices.length)].appId;
+ const backup={...d};
+ d[t]=next;
+ if(kind==='normal'){
+  const adjusted=harmonizeDay(i,{keepLiked:true,lockSide:t==='side',lockSoup:t==='soup'});
+  if(!adjusted.ok){Object.assign(d,backup);modal('差し替えできません','<p>ほかの料理の「おいしそう」評価を維持したまま、味の合う組み合わせが見つかりませんでした。</p>');return;}
+ }
+ s.rejected.push(old);
  if(t==='main'&&kind==='curry'){
-  // 同じ鍋を2日食べる設定：片方を差し替えたときは両日同じ種類へ
   for(const neighbor of [i-1,i+1]){
    if(neighbor>=0&&neighbor<7&&s.week[neighbor].main===old){
     s.week[neighbor].main=next;
@@ -644,6 +676,7 @@ function rejectAndReplace(i,t){
  s.history.unshift({date:new Date().toISOString(),before:old,after:next,day:i,slot:t});
  delete s.ratings[id(i,t)];
 }
+
 function shoppingData(){
  const agg={};
  const add=(rec,mul=1,skipMainRice=false)=>{
