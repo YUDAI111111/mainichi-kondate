@@ -294,6 +294,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,te
 <script src="recipe-catalog.js"></script>
 <script src="recipe-details.js"></script>
 <script src="meal-pairing.js"></script>
+<script src="rice-dinner-rules.js"></script>
 <script>
 // 各分量は試作用の1人分。味付けの厳密なレシピや公的栄養値を保証するものではありません。
 const R={
@@ -335,7 +336,7 @@ for(const item of KONDATE_CATALOG){
  R[item.appId].cuisine=item.cuisine;R[item.appId].mealKind=item.category;
  if(["pot","curry"].includes(item.category))R[item.appId].isOneDish=true;
 }
-const initial={people:1,morningSoup:true,pastaCount:2,budget:'',weeklyBudget:'',priceOverrides:{},noBentoDays:[5,6],breakfast:{nattoPacks:1,eggs:1,riceEnabled:true,riceGrams:300,sausageEnabled:false,oilGrams:3,extras:''},week:[
+const initial={weekStart:window.KONDATE_RICE_RULES.mondayISO(),people:1,morningSoup:true,pastaCount:2,budget:'',weeklyBudget:'',priceOverrides:{},noBentoDays:[5,6],breakfast:{nattoPacks:1,eggs:1,riceEnabled:true,riceGrams:300,sausageEnabled:false,oilGrams:3,extras:''},week:[
 {main:'shogayaki',side:'komatsu',soup:'wakamesoup'},
 {main:'catalog_recipe_002',side:'catalog_recipe_075',soup:'catalog_recipe_067'},
 {main:'pasta',side:'spinach',soup:'mushroom',optionalSoup:false},
@@ -344,7 +345,7 @@ const initial={people:1,morningSoup:true,pastaCount:2,budget:'',weeklyBudget:'',
 {main:'pasta',side:'atsu',soup:'cabbage',optionalSoup:false},
 {main:'catalog_recipe_038',side:'shiraae',soup:'daikon',optionalSide:true}],prefs:[],likes:[],rejected:[],ratings:{},stock:[],checked:{},counts:{},history:[]};
 function copy(o){return JSON.parse(JSON.stringify(o))};
-let s;try{let r=JSON.parse(localStorage.getItem('kondate_10'));s=Object.assign(copy(initial),r||{});if(!Array.isArray(s.week)||s.week.length!==7)throw Error('bad');s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{});s.priceOverrides=s.priceOverrides&&typeof s.priceOverrides==='object'?s.priceOverrides:{};if(r&&!Object.prototype.hasOwnProperty.call(r,'weeklyBudget')&&r.budget!=='')s.weeklyBudget=r.budget;s.noBentoDays=Array.isArray(s.noBentoDays)?[...new Set(s.noBentoDays.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]:[5,6]}catch(e){s=copy(initial)}
+let s;try{let r=JSON.parse(localStorage.getItem('kondate_10'));s=Object.assign(copy(initial),r||{});if(!Array.isArray(s.week)||s.week.length!==7)throw Error('bad');s.breakfast=Object.assign(copy(initial.breakfast),s.breakfast||{});s.priceOverrides=s.priceOverrides&&typeof s.priceOverrides==='object'?s.priceOverrides:{};if(r&&!Object.prototype.hasOwnProperty.call(r,'weeklyBudget')&&r.budget!=='')s.weeklyBudget=r.budget;s.noBentoDays=Array.isArray(s.noBentoDays)?[...new Set(s.noBentoDays.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]:[5,6];if(!/^\d{4}-\d{2}-\d{2}$/.test(s.weekStart))s.weekStart=window.KONDATE_RICE_RULES.mondayISO()}catch(e){s=copy(initial)}
 const daynames=['月','火','水','木','金','土','日']; const slots=['main','side','soup'];const slotNames={main:'主菜',side:'副菜',soup:'汁物'};
 function save(){localStorage.setItem('kondate_10',JSON.stringify(s))};function el(id){return document.getElementById(id)};function esc(str){return String(str??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};function id(i,t){return `${i}-${t}`};
 function showView(name){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===name));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===name)); if(name==='ai')renderAI();if(name==='shopping')renderShopping();if(name==='nutrition')renderNutrition();if(name==='recipes')renderCatalog();if(name==='settings')renderSettings()};document.querySelectorAll('[data-view]').forEach(x=>x.addEventListener('click',()=>showView(x.dataset.view)));
@@ -459,6 +460,14 @@ function pairingAllowedRecipe(key){
  return !(s.prefs||[]).some(p=>(p.type==='dislike'||p.type==='allergy')&&
    (alias[p.name.trim()]||[p.name.trim()]).some(x=>x&&text.includes(x)));
 }
+function riceWeekStart(){return s.weekStart||window.KONDATE_RICE_RULES.mondayISO();}
+function riceWeekQuota(){return window.KONDATE_RICE_RULES.monthlyQuota(riceWeekStart());}
+function riceMainAllowed(key,day,week=s.week,registry=R){
+ return window.KONDATE_RICE_RULES.allowReplacement(key,day,week,riceWeekStart(),registry,KONDATE_CATALOG);
+}
+function riceWeekProblems(week=s.week,registry=R){
+ return window.KONDATE_RICE_RULES.issues(week,riceWeekStart(),registry,KONDATE_CATALOG);
+}
 function pairingCatalog(type,cuisine){
  return KONDATE_CATALOG.filter(x=>x.category===type&&x.cuisine===cuisine&&pairingAllowedRecipe(x.appId))
    .map(x=>x.appId);
@@ -538,7 +547,8 @@ function chooseMealRecipe(kind,current,day){
  if(kind==='pasta')return 'pasta';
  let items=KONDATE_CATALOG.filter(x=>
   (kind==='normal'?x.category==='main':x.category===kind) &&
-  x.appId!==current && pairingAllowedRecipe(x.appId)
+  x.appId!==current && pairingAllowedRecipe(x.appId)&&
+  (kind!=='normal'||!Number.isInteger(day)||riceMainAllowed(x.appId,day))
  );
  if(kind==='normal'&&Number.isInteger(day)){
   const d=s.week[day],lockedSide=s.ratings[id(day,'side')]===1,
@@ -655,7 +665,8 @@ function rejectAndReplace(i,t){
  }
  const category=t==='main'?(kind==='pot'?'pot':kind==='curry'?'curry':'main'):t;
  const allowed=KONDATE_CATALOG.filter(item=>item.category===category&&item.appId!==old&&
-   !s.rejected.includes(item.appId)&&pairingAllowedRecipe(item.appId));
+   !s.rejected.includes(item.appId)&&pairingAllowedRecipe(item.appId)&&
+   (t!=='main'||kind!=='normal'||riceMainAllowed(item.appId,i)));
  const filtered=allowed.filter(item=>{
   if(kind!=='normal'){
    if(t==='side'&&(kind==='pot'||kind==='curry'))
@@ -886,8 +897,9 @@ el('savesettings').onclick=()=>{
  };
 s.morningSoup=el('morning-soup').value==='yes';s.pastaCount=+el('pasta-count').value;s.weeklyBudget=el('budget').value;let curr=s.week.filter(x=>x.main==='pasta').length;if(curr!==s.pastaCount){if(s.pastaCount===1){let i=s.week.findLastIndex(x=>x.main==='pasta');s.week[i].main='garlicchicken'}else{let i=5;s.week[i].main='pasta'}s.ratings={}}save();renderPlanner();renderShopping();alert('設定を保存しました。')};
 
-function newWeekForReset(){
+function newWeekForReset(targetWeek=window.KONDATE_RICE_RULES.mondayISO()){
  const previous=s.week.map(d=>({...d}));
+ const westernQuota=window.KONDATE_RICE_RULES.monthlyQuota(targetWeek);
  const used={main:new Set(),side:new Set(),soup:new Set()};
  const forbidden=s.prefs.filter(p=>p.type==='allergy'||p.type==='dislike').map(p=>p.name.trim()).filter(Boolean);
  const aliases={'ウリ科':['きゅうり','かぼちゃ','ズッキーニ','ゴーヤ','冬瓜','メロン','スイカ'],'貝類':['あさり','しじみ','はまぐり','ホタテ','牡蠣','ムール貝','貝'],'海老':['えび','エビ','海老'],'カニ':['かに','カニ','蟹'],'イカ':['いか','イカ','烏賊'],'タコ':['たこ','タコ','蛸']};
@@ -896,8 +908,12 @@ function newWeekForReset(){
   const words=[r.n,...r.ings.map(x=>x[0])].join(' ');
   return !forbidden.some(f=>(aliases[f]||[f]).some(w=>words.includes(w)));
  }
- function pick(type,avoid,cuisine){
-  const pool=KONDATE_CATALOG.filter(item=>item.category===type&&safe(item.appId)).map(item=>item.appId);
+ function pick(type,avoid,cuisine,day){
+  const pool=KONDATE_CATALOG.filter(item=>item.category===type&&safe(item.appId)&&
+    (type!=='main'||(window.KONDATE_RICE_RULES.riceFriendly(item.appId,R,KONDATE_CATALOG)&&
+      (day===westernDay?window.KONDATE_RICE_RULES.isWestern(item.appId,R,KONDATE_CATALOG):
+       !window.KONDATE_RICE_RULES.isWestern(item.appId,R,KONDATE_CATALOG)))))
+   .map(item=>item.appId);
   if(!pool.length)throw Error(type+' の利用可能な料理がありません');
   let candidates=pool.filter(k=>!used[type]?.has(k));
   if(!candidates.length)candidates=pool;
@@ -914,6 +930,11 @@ function newWeekForReset(){
  const pastaCount=Math.min(2,Math.max(1,Number(s.pastaCount)||1));
  const pastaDays=new Set(pastaCount===2?[2,5]:[2]);
  const potDay=6,curryDay=3;
+ const westR=window.KONDATE_RICE_RULES;
+ const availableWestern=KONDATE_CATALOG.filter(x=>x.category==='main'&&westR.isWestern(x.appId,R,KONDATE_CATALOG)&&
+   westR.riceFriendly(x.appId,R,KONDATE_CATALOG)&&safe(x.appId)&&
+   pairingSelect(x.appId,{preferCurrent:false}));
+ const westernDay=westernQuota&&availableWestern.length?0:-1;
  const next=[];
  for(let i=0;i<7;i++){
   const old=previous[i]||{};
@@ -931,7 +952,7 @@ function newWeekForReset(){
   }
   let main,selected;
   for(let attempt=0;attempt<60;attempt++){
-   const candidate=pick('main',old.main);
+   const candidate=pick('main',old.main,undefined,i);
    const choice=pairingSelect(candidate,{side:old.side,soup:old.soup,used,
     preferCurrent:false});
    if(choice){main=candidate;selected=choice;break;}
@@ -945,8 +966,9 @@ function newWeekForReset(){
 el('reset-menu').onclick=()=>{
  if(!confirm('1週間の献立をすべて作り直します。料理の評価もリセットします。設定・食材の好み・在庫は残します。続けますか？'))return;
  let next;
- try{next=newWeekForReset()}catch(e){alert('献立を作り直せませんでした：'+e.message+'。材料未確認の料理は選びません。');return}
- s.week=next;s.ratings={};s.likes=[];s.rejected=[];s.history=[];s.checked={};
+ const targetWeek=window.KONDATE_RICE_RULES.mondayISO();
+ try{next=newWeekForReset(targetWeek)}catch(e){alert('献立を作り直せませんでした：'+e.message+'。材料未確認の料理は選びません。');return}
+ s.weekStart=targetWeek;s.week=next;s.ratings={};s.likes=[];s.rejected=[];s.history=[];s.checked={};
  save();renderPlanner();
  alert('1週間の献立を作り直しました。料理の評価もリセットしました。');
 };
