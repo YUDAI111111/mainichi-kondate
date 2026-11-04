@@ -534,13 +534,41 @@ function harmonizeDay(day,options={}){
  return {ok:true,changed};
 }
 function pairingProblems(){
- return s.week.flatMap((d,i)=>{
+ const byDay=new Map();
+ for(const item of riceWeekProblems()){
+  const previous=byDay.get(item.day)||[];
+  previous.push(item.reason);byDay.set(item.day,previous);
+ }
+ s.week.forEach((d,i)=>{
   const kind=mealKind(d.main);
   const result=kind==='normal'?pairingReview(d.main,d.side,d.soup):
    ((kind==='pot'||kind==='curry')&&d.optionalSide?
     window.KONDATE_PAIRING.assessSide(R,d.main,d.side):{ok:true,issues:[]});
-  return result.ok?[]:[{day:i,reasons:result.issues}];
+  if(!result.ok)byDay.set(i,[...(byDay.get(i)||[]),...result.issues]);
  });
+ return [...byDay.entries()].map(([day,reasons])=>({day,reasons}));
+}
+function repairRiceDay(day){
+ const d=s.week[day],rules=window.KONDATE_RICE_RULES;
+ if(mealKind(d.main)!=='normal')return {ok:true,changed:[]};
+ if(!riceWeekProblems().some(x=>x.day===day))return {ok:true,changed:[]};
+ if(s.ratings[id(day,'main')]===1)return {ok:false,changed:[]};
+ const saved={...d};
+ const candidates=KONDATE_CATALOG.filter(item=>item.category==='main'&&item.cuisine!=='洋風'&&
+  pairingAllowedRecipe(item.appId)&&!s.rejected.includes(item.appId)&&
+  rules.riceFriendly(item.appId,R,KONDATE_CATALOG)).map(item=>{
+  const sideLocked=s.ratings[id(day,'side')]===1,soupLocked=s.ratings[id(day,'soup')]===1;
+  const selected=pairingSelect(item.appId,{side:d.side,soup:d.soup,lockSide:sideLocked,lockSoup:soupLocked});
+  if(!selected)return null;
+  const duplicate=s.week.some((w,i)=>i!==day&&w.main===item.appId);
+  return {main:item.appId,...selected,score:selected.score+(duplicate?30:0)};
+ }).filter(Boolean).sort((a,b)=>a.score-b.score);
+ if(!candidates.length)return {ok:false,changed:[]};
+ const selected=candidates[0];
+ d.main=selected.main;d.side=selected.side;d.soup=selected.soup;
+ const changed=['main','side','soup'].filter(k=>d[k]!==saved[k]);
+ for(const key of changed)delete s.ratings[id(day,key)];
+ return {ok:true,changed};
 }
 
 function chooseMealRecipe(kind,current,day){
@@ -580,7 +608,7 @@ function renderPlanner(){
  const alertBox=el('pairing-alert');
  alertBox.hidden=problems.length===0;
  alertBox.innerHTML=problems.length?
-  '<strong>味の組み合わせを確認：'+problems.map(x=>daynames[x.day]+'曜').join('・')+'</strong><span>料理の系統・濃さ・味付けが重なっています。上の「味の組み合わせを整える」で調整できます。</span>':'';
+  '<strong>献立の相性を確認：'+problems.map(x=>daynames[x.day]+'曜').join('・')+'</strong><span>白米との相性、洋食の頻度、味付けを確認してください。「味の組み合わせを整える」で調整できます。</span>':'';
  el('days').innerHTML=s.week.map((d,i)=>{
   const kind=mealKind(d.main),roles=mealRoles(d);
   const selectors=['normal','pasta','pot','curry'].map(k=>'<button class="btn tiny meal-choice choice-'+k+' '+(k===kind?'primary':'')+'" aria-pressed="'+(k===kind?'true':'false')+'" title="夕食の種類を変更" data-kind-day="'+i+'" data-kind="'+k+'">'+mealLabel(k)+'</button>').join('');
@@ -602,6 +630,7 @@ function renderPlanner(){
    '<div class="toolbar day-kind-picker">'+selectors+'</div>'+curryNote+'<div class="dinner-dishes dishes-'+roles.length+'">'+cards+'</div>'+optional+'</div><div class="day-analysis" data-cost-day="'+i+'"></div><div class="day-micro-gap" data-micro-gap-day="'+i+'"></div></div>';
  }).join('');
  el('rule-summary').innerHTML='<span class="metric">'+s.people+'人分</span> <span class="metric">朝の汁物：'+(s.morningSoup?'あり':'なし')+'</span> <span class="metric">パスタ週'+s.pastaCount+'回</span>'+
+  '<p class="small muted">対象週：'+esc(riceWeekStart())+'の月曜から。白米中心の献立にし、洋食の通常夕食は毎月の第1月曜を含む週だけ最大1回（今週の枠：'+riceWeekQuota()+'回）。クリーム煮やミルク煮など、ご飯に合いにくい洋食は候補にしません。</p>'+
   '<p class="small muted">カレーは4食分以上まとめて調理し、翌晩も同じカレー。残りは冷凍し、栄養上は食べた分だけ計上。</p>'+ '<p class="small muted">弁当不要：'+(s.noBentoDays?.length?s.noBentoDays.map(i=>daynames[i]+'曜').join('・'):'なし')+' ／ 通常夕食は翌日の弁当が必要な場合のみ主菜・副菜を各2食分。</p>'+' <p class="small muted">通常：主菜＋副菜＋汁物／パスタ：単品・汁物任意／鍋：主菜と汁物を兼ね、副菜任意／カレー：単品・副菜任意。</p>';
  document.querySelectorAll('[data-rating]').forEach(btn=>btn.onclick=()=>{
   const day=+btn.dataset.day,slot=btn.dataset.slot,v=+btn.dataset.rating;
@@ -975,16 +1004,20 @@ el('reset-menu').onclick=()=>{
 
 el('pairing-fix').onclick=()=>{
  const before=pairingProblems();
- if(!before.length){alert('現在の通常献立に、味の組み合わせの不一致は見つかりませんでした。');return;}
- if(!confirm('系統・こってり度・味付けが合わない料理を調整します。おいしそう評価済みの料理は維持します。続けますか？'))return;
- let fixed=0,unresolved=[];
+ if(!before.length){alert('現在の献立に、味や白米との相性の不一致は見つかりませんでした。');return;}
+ if(!confirm('ご飯との相性・洋食の頻度・味付けを調整します。「おいしそう」評価済みの料理は変更しません。続けますか？'))return;
+ let fixed=0;
  for(const problem of before){
-  const result=harmonizeDay(problem.day,{keepLiked:true});
-  if(result.ok){if(result.changed.length)fixed++;}else unresolved.push(daynames[problem.day]+'曜日');
+  const day=problem.day;
+  const rice=repairRiceDay(day);
+  if(!rice.ok)continue;
+  const result=harmonizeDay(day,{keepLiked:true});
+  if(result.ok&&(rice.changed.length||result.changed.length))fixed++;
  }
  save();renderPlanner();
  const rest=pairingProblems().map(x=>daynames[x.day]+'曜日');
- alert(fixed+'日分の組み合わせを調整しました。'+(rest.length?'未調整：'+rest.join('、')+'（評価済み料理を保持したため）':''));
+ alert(fixed+'日分の組み合わせを調整しました。'+
+  (rest.length?'未調整：'+rest.join('、')+'（評価済み料理などを維持したため）':''));
 };
 el('reset-ratings').onclick=()=>{if(confirm('「おいしそう」の評価記録をリセットしますか？献立そのものは維持します。')){s.ratings={};s.likes=[];s.rejected=[];save();renderPlanner()}};
 el('export').onclick=()=>{let blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kondate-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
