@@ -39,6 +39,11 @@
     (/コンソメ|すまし|お吸い物|野菜汁|中華スープ|塩だし/.test(txt)||
      ingredients.some(x=>/^(コンソメ|だし汁|昆布だし|鶏がらだし|鶏がらスープの素)$/.test(x.name)));
   let richness=creamy?3:fatty?2:meatBroth?2:0;
+  const modestButter=/バター蒸し|バター炒め|バターソテー/.test(txt)&&
+   ingredients.filter(x=>x.name==='バター').reduce((sum,x)=>sum+x.quantity,0)<=10&&
+   !ingredients.some(x=>/豚|牛肉|鶏肉|チーズ|牛乳/.test(x.name));
+  // 少量のバターで蒸した野菜を「濃厚な料理」と誤判定しない。
+  if(modestButter)richness=1;
   if(/ソテー|炒め|蒸し煮/.test(txt)&&!creamy)richness=Math.max(richness,1);
   if(/澄まし|すまし|お吸い物|コンソメ|だし汁|塩だし|野菜汁|中華スープ|おひたし|煮びたし/.test(txt)&&!creamy&&!meatBroth)richness=0;
   const flavors=new Set();
