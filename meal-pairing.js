@@ -35,6 +35,9 @@
   const fatty=/こってり|濃厚|バター|チーズ|クリーム|ミルク|揚げ|唐揚げ|フライ|カツ|回鍋肉|麻婆|キーマ/.test(txt);
   const meatBroth=/豚汁|肉団子|鶏団子|具だくさん.*汁/.test(txt)||
     ingredients.some(x=>/豚こま|豚バラ|鶏ひき/.test(x.name)&&x.quantity>=40);
+  const lightBroth=!creamy&&!meatBroth&&!/みそ|味噌/.test(txt)&&
+    (/コンソメ|すまし|お吸い物|野菜汁|中華スープ|塩だし/.test(txt)||
+     ingredients.some(x=>/^(コンソメ|だし汁|昆布だし|鶏がらだし|鶏がらスープの素)$/.test(x.name)));
   let richness=creamy?3:fatty?2:meatBroth?2:0;
   if(/ソテー|炒め|蒸し煮/.test(txt)&&!creamy)richness=Math.max(richness,1);
   if(/澄まし|すまし|お吸い物|コンソメ|だし汁|塩だし|野菜汁|中華スープ|おひたし|煮びたし/.test(txt)&&!creamy&&!meatBroth)richness=0;
@@ -46,7 +49,7 @@
   if(/トマト|ミネストローネ/.test(txt))flavors.add("トマト");
   if(/カレー/.test(txt))flavors.add("カレー");
   if(/にんにく/.test(txt))flavors.add("にんにく");
-  return {name,cuisine:String(rec.cuisine||""),richness,creamy,meatBroth,present,dominant,flavors};
+  return {name,cuisine:String(rec.cuisine||""),richness,creamy,meatBroth,lightBroth,present,dominant,flavors};
  }
  function assess(map,mainKey,sideKey,soupKey){
   const main=dishInfo(map[mainKey]),side=dishInfo(map[sideKey]),soup=dishInfo(map[soupKey]);
@@ -75,7 +78,8 @@
   // Creamy main + buttery side is needlessly heavy even with a light soup.
   if(main.creamy&&side.flavors.has("バター"))add("クリーム主菜とバター副菜で脂っこさが重なります",false);
   const dedupHard=[...new Set(issues)],dedupSoft=[...new Set(soft)];
-  return {ok:dedupHard.length===0,score:dedupHard.length*100+dedupSoft.length*12,
+  const balancingBonus=main.richness>=2&&soup.lightBroth?12:0;
+  return {ok:dedupHard.length===0,score:dedupHard.length*100+dedupSoft.length*12-balancingBonus,
    issues:dedupHard,soft:dedupSoft};
  }
  window.KONDATE_PAIRING={assess,dishInfo};
