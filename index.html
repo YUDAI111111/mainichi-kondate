@@ -774,7 +774,13 @@ el('apply-ai').onclick=()=>{
     delete s.ratings[id(day+1,'main')];
    }
    if(slot==='soup'&&mealKind(s.week[day].main)==='pasta')s.week[day].optionalSoup=true;
-   if(slot==='side'&&['pot','curry'].includes(mealKind(s.week[day].main)))s.week[day].optionalSide=true;
+   if(slot==='side'&&['pot','curry'].includes(mealKind(s.week[day].main))){
+    if(!window.KONDATE_PAIRING.assessSide(R,s.week[day].main,key).ok){
+     Object.assign(s.week[day],oldDay);
+     throw Error('鍋・カレーと副菜の味付けや主要食材が合いません。');
+    }
+    s.week[day].optionalSide=true;
+   }
    delete s.ratings[id(day,slot)];
   }else if(Array.isArray(out.week)&&Array.isArray(out.recipes)){
    if(out.week.length!==7)throw Error('7日分の献立が必要です');
@@ -810,7 +816,13 @@ el('apply-ai').onclick=()=>{
     throw Error('カレーは同じ料理を2日連続で指定してください（1回調理・2夜）。');
    }
    for(let i=0;i<7;i++){
-    if(prepared[w[i].main]?.mealKind==='pot'||prepared[w[i].main]?.mealKind==='curry'||w[i].main==='pasta')continue;
+    const kind=prepared[w[i].main]?.mealKind;
+    if((kind==='pot'||kind==='curry')&&w[i].optionalSide){
+     const review=window.KONDATE_PAIRING.assessSide(prepared,w[i].main,w[i].side);
+     if(!review.ok)throw Error(daynames[i]+'曜日の主菜と副菜が合いません：'+review.issues.join('／'));
+     continue;
+    }
+    if(kind==='pot'||kind==='curry'||w[i].main==='pasta')continue;
     const match=pairingReview(w[i].main,w[i].side,w[i].soup,prepared);
     if(!match.ok)throw Error(daynames[i]+'曜日の食べ合わせが不適切です：'+match.issues.join('／'));
    }
